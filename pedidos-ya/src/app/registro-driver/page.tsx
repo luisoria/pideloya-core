@@ -242,7 +242,7 @@ export default function RegistroDriverPage() {
                 })
                 const data = await res.json()
 
-                if (res.status === 409 && data.application) {
+                if ((res.status === 409 || res.status === 200) && data.application) {
                     const app = data.application
                     console.log('[RUT] Solicitud encontrada, cargando datos...')
                     setAppId(app.id)
@@ -258,7 +258,6 @@ export default function RegistroDriverPage() {
                         gender: app.gender || prev.gender,
                         nationality: app.nationality || prev.nationality,
                         foreignDocType: app.foreignDocType || prev.foreignDocType,
-                        foreignDocNumber: app.foreignDocNumber || prev.foreignDocNumber,
                         street: app.street || prev.street,
                         streetNumber: app.streetNumber || prev.streetNumber,
                         apartment: app.apartment || prev.apartment,
@@ -277,7 +276,7 @@ export default function RegistroDriverPage() {
                         alert(`👋 Hola ${app.firstName}, hemos recuperado tu progreso hasta el paso ${app.currentStep}.`)
                         setStep(app.currentStep)
                     }
-                } else if (res.status === 409 && res.ok === false) {
+                } else if ((res.status === 409 || res.status === 403) && res.ok === false) {
                     // Estado bloqueado (APPROVED, IN_REVIEW, etc)
                     alert(`🚫 ${data.error || 'Ya tienes una solicitud procesada con este RUT.'}`)
                     // Salir y resetear
@@ -318,10 +317,12 @@ export default function RegistroDriverPage() {
                 return null
             }
 
-            if (data.id) {
-                setAppId(data.id)
-                if (data.trackingCode) setTrackingCode(data.trackingCode)
-                return data.id as string
+            const newId = data.id || data.existingId;
+            if (newId) {
+                setAppId(newId)
+                const newTracking = data.trackingCode || data.application?.trackingCode;
+                if (newTracking) setTrackingCode(newTracking)
+                return newId as string
             }
             return 'OK'
         } catch (e) {

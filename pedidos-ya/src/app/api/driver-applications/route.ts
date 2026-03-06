@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         }
 
         // ── CREAR O RECUPERAR POR RUT ──
-        if (data.rut) {
+        if (data.rut && !applicationId) {
             const existing = await prisma.driverApplication.findFirst({
                 where: { rut: data.rut },
             })
@@ -80,12 +80,20 @@ export async function POST(req: Request) {
                         status: existing.status
                     }, { status: 409 })
                 }
-                // Si es borrador, permitir que el cliente la recupere
+                
+                // Si es borrador, permitir que el cliente la recupere y la actualizamos con sus nuevos datos del step actual
+                const updated = await prisma.driverApplication.update({
+                    where: { id: existing.id },
+                    data: { ...data, currentStep: step ?? existing.currentStep, updatedAt: new Date() }
+                })
+
                 return NextResponse.json(
                     {
-                        message: 'Solicitud recuperada',
-                        existingId: existing.id,
-                        application: existing
+                        message: 'Solicitud recuperada y actualizada',
+                        existingId: updated.id,
+                        id: updated.id,
+                        trackingCode: updated.trackingCode,
+                        application: updated
                     },
                     { status: 200 }
                 )
