@@ -1,0 +1,384 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  phone        String?  // For CRM
+  role         String   @default("CUSTOMER") // CUSTOMER, RESTAURANT, DRIVER, ADMIN
+  status       String   @default("REGULAR")  // VIP, REGULAR, NEW
+  ltv          Float    @default(0.0)        // Lifetime value for CRM
+  passwordHash String?  // null = demo/legacy user (no password required)
+  avatar       String?  // Profile picture URL
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  restaurant    Restaurant?
+  orders        Order[]     @relation("CustomerOrders")
+  driverOrders  Order[]     @relation("DriverOrders")
+  tickets       Ticket[]    @relation("UserTickets")
+  reviews       Review[]    @relation("CustomerReviews")
+  favorites     Favorite[]  @relation("UserFavorites")
+  couponUsages  CouponUsage[] @relation("UserCoupons")
+}
+
+model Ticket {
+  id            String   @id @default(uuid())
+  ticketNumber  String   @unique @default(uuid()) // Human-readable TKT-XXXXX
+  issue         String   // Short title
+  description   String   @default("")  // Detailed description
+  category      String   @default("GENERAL") // GENERAL, ORDER_ISSUE, PAYMENT, DELIVERY, QUALITY, APP_BUG, OTHER
+  status        String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED, ESCALATED
+  priority      String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  requesterType String   @default("CUSTOMER") // CUSTOMER, DRIVER, RESTAURANT
+  
+  // Optional order reference
+  orderId       String?
+  
+  // Resolution
+  resolution    String?  // Notes when resolved
+  resolvedBy    String?  // Admin who resolved
+  resolvedAt    DateTime?
+  
+  // SLA
+  slaDeadline   DateTime?
+  
+  userId        String
+  user          User     @relation("UserTickets", fields: [userId], references: [id])
+  
+  replies       TicketReply[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model TicketReply {
+  id        String   @id @default(uuid())
+  message   String
+  author    String   // Name of who replied
+  authorRole String  @default("CUSTOMER") // CUSTOMER, DRIVER, RESTAURANT, ADMIN
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Restaurant {
+  id          String   @id @default(uuid())
+  name        String
+  image       String?
+  address     String
+  category    String
+  lat         Float?   // Latitude for driver geolocation
+  lon         Float?   // Longitude for driver geolocation
+  phone       String?
+  ownerId     String   @unique
+  owner       User     @relation(fields: [ownerId], references: [id])
+  
+  // Link to registration
+  applicationId String? @unique
+  application   RestaurantApplication? @relation(fields: [applicationId], references: [id])
+  
+  // Commission settings (managed by admin)
+  commissionRate Float    @default(15.0) // Percentage per order
+  
+  products    Product[]
+  orders      Order[]
+  reviews     Review[]
+  favorites   Favorite[]
+  coupons     Coupon[]
+}
+
+model RestaurantApplication {
+  id              String   @id @default(uuid())
+  trackingCode    String   @unique @default(uuid())
+  status          String   @default("DRAFT") // DRAFT, SUBMITTED, IN_REVIEW, DOCS_INCOMPLETE, APPROVED, REJECTED
+  
+  // Paso 1: Datos negocio
+  businessName    String?
+  fantasyName     String?
+  rut             String?  @unique
+  category        String?
+  phone           String?
+  email           String?  @unique
+  
+  // Paso 2: Ubicación
+  address         String?
+  comuna          String?
+  region          String?
+  
+  // Paso 3: Documentación legal (Uploads)
+  commerceRegisterUrl String?   // Registro de comercio / E-RUT
+  identityDocUrl     String?    // Cédula representante
+  tributaryFolderUrl  String?   // Carpeta tributaria
+  
+  // Paso 4: Visuales
+  storefrontPhotoUrl String?    // Foto fachada
+  menuPhotoUrl       String?    // Foto carta/menú
+  
+  // Paso 5: Contrato & Firma
+  contractSignedAt      DateTime?
+  contractFullname      String?
+  contractSignatureHash String?
+  contractValidationCode String?
+  
+  // Metadata & Review
+  rejectionReason String?
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  restaurant      Restaurant?
+}
+
+model RestaurantCommissionRecord {
+  id            String   @id @default(uuid())
+  orderId       String
+  restaurantId  String
+  totalAmount   Float    // Total order value
+  commissionRate Float   // Rate at the time of order
+  commissionAmount Float // Calculated amount
+  createdAt     DateTime @default(now())
+}
+
+
+model Product {
+  id           String     @id @default(uuid())
+  name         String
+  description  String
+  price        Float
+  image        String?
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  
+  orderItems   OrderItem[]
+}
+
+model Order {
+  id           String   @id @default(uuid())
+  status       String   @default("PENDING") // PENDING, CONFIRMED, READY, PICKED_UP, DELIVERED
+  total        Float
+  paymentMethod String  @default("CASH") // CASH, CARD
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  customerId   String
+  customer     User     @relation("CustomerOrders", fields: [customerId], references: [id])
+  
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  
+  driverId     String?
+  driver       User?    @relation("DriverOrders", fields: [driverId], references: [id])
+  
+  items        OrderItem[]
+  couponUsage  CouponUsage?
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  price     Float
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  rating       Int      // 1-5
+  comment      String?
+  createdAt    DateTime @default(now())
+  
+  customerId   String
+  customer     User       @relation("CustomerReviews", fields: [customerId], references: [id])
+  
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  
+  orderId      String?    @unique // Optional link to specific order
+}
+
+model Favorite {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  
+  userId       String
+  user         User       @relation("UserFavorites", fields: [userId], references: [id])
+  
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([userId, restaurantId])
+}
+
+model DriverApplication {
+  id              String   @id @default(uuid())
+  trackingCode    String   @unique @default(uuid())
+  
+  // Estado del proceso
+  status          String   @default("DRAFT") // DRAFT, SUBMITTED, IN_REVIEW, DOCS_INCOMPLETE, ADDITIONAL_REVIEW, APPROVED, REJECTED
+  rejectionReason String?
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  
+  // Paso 1: Datos personales
+  firstName       String?
+  lastNameP       String?  // Apellido paterno
+  lastNameM       String?  // Apellido materno
+  rut             String?  @unique
+  birthDate       String?
+  email           String?
+  phone           String?
+  gender          String?  // M, F, O, PREFER_NOT
+  nationality     String?  @default("CL")
+  foreignDocType  String?  // CEDULA_EXT, PASSPORT, RESIDENCIA_TRAMITE
+  foreignDocNumber String?
+  
+  // Paso 2: Dirección
+  street          String?
+  streetNumber    String?
+  apartment       String?
+  comuna          String?
+  region          String?
+  
+  // Paso 3: Verificación
+  phoneVerified   Boolean  @default(false)
+  emailVerified   Boolean  @default(false)
+  emailCode       String?
+  phoneCode       String?
+  passwordHash    String?
+  
+  // Paso 4: Documentos identidad
+  idFrontUrl      String?
+  idBackUrl       String?
+  selfieUrl       String?
+  
+  // Paso 5: Vehículo
+  vehicleType     String?  // BICYCLE, EBIKE, MOTORCYCLE, CAR
+  ebikePower      String?  // UNDER_50CC, OVER_50CC
+  
+  // Paso 6: Documentos vehículo
+  licenseUrl      String?
+  licenseBackUrl  String?
+  circulationUrl  String?
+  driverRecordUrl String?
+  soapUrl         String?
+  techReviewUrl   String?
+  
+  // Paso 7: Antecedentes
+  backgroundUrl   String?
+  backgroundDate  String?
+  
+  // Paso 8: Datos bancarios
+  bankName        String?
+  accountType     String?  // CORRIENTE, VISTA, CHEQUERA, DIGITAL
+  accountNumber   String?
+  bankRut         String?  // Debe coincidir con RUT principal
+  
+  // Paso 9: Contrato & Firma
+  contractSignedAt      DateTime?
+  contractSignatureHash String?
+  contractValidationCode String?
+  contractContent       String?
+
+  // Metadata
+  currentStep     Int      @default(0)
+  completedSteps  String   @default("[]") // JSON array of completed step numbers
+  passwordResetCode String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DeliveryZone {
+  id          String   @id @default(uuid())
+  name        String   // e.g. "Santiago Centro", "Providencia"
+  active      Boolean  @default(true)
+  deliveryFee Float    @default(1500) // CLP
+  minOrder    Float    @default(5000) // CLP minimum order
+  lat         Float?   // Center latitude
+  lon         Float?   // Center longitude
+  radiusKm    Float    @default(5)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Coupon {
+  id              String   @id @default(uuid())
+  code            String   @unique // The actual code users type: "PIZZA20"
+  internalName    String   // Visible only to restaurant
+  description     String   // Public description
+  
+  // Type: PERCENTAGE, FIXED_AMOUNT, FREE_SHIPPING, TWO_FOR_ONE, FREE_ITEM, FIRST_ORDER
+  type            String   
+
+  // Value depends on type (e.g., 20 for 20%, 5000 for $5000)
+  value           Float?
+  
+  // Restrictions
+  minOrderAmount  Float    @default(0)
+  maxDiscount     Float?   // Cap for percentage
+  
+  // Validity
+  startDate       DateTime
+  expirationDate  DateTime
+  validDays       String   @default("[]") // JSON array of day indices [1,2,3,4,5,6,0] (0 = Sunday)
+  
+  // Time window (hh:mm format, e.g. "14:00")
+  timeWindowStart String?
+  timeWindowEnd   String?
+  
+  // Limits
+  totalUsageLimit Int?     // null = unlimited
+  currentUsages   Int      @default(0)
+  userUsageLimit  Int?     // e.g. 1 per user
+  
+  // Applicability
+  appliesToAll    Boolean  @default(true)
+  targetProducts  String   @default("[]") // JSON array of product IDs
+  targetCategories String  @default("[]") // JSON array of category names
+  
+  // Platform settings
+  channel         String   @default("ALL") // ALL, APP, WEB
+  
+  // Financial split
+  restaurantSplit Float    @default(100.0) // Percentage absorbed by restaurant
+  platformSplit   Float    @default(0.0)   // Percentage absorbed by PideloYa
+  
+  status          String   @default("ACTIVE") // DRAFT, ACTIVE, PAUSED, EXPIRED, DEPLETED
+  
+  // Relations
+  restaurantId    String
+  restaurant      Restaurant @relation(fields: [restaurantId], references: [id])
+  
+  usages          CouponUsage[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CouponUsage {
+  id        String   @id @default(uuid())
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id])
+  
+  userId    String
+  user      User     @relation("UserCoupons", fields: [userId], references: [id])
+  
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  discountAmount Float // The actual CLP amount discounted on this usage
+  
+  usedAt    DateTime @default(now())
+}
