@@ -9,7 +9,15 @@ const prisma = new PrismaClient()
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-        const { step, applicationId, password, passwordConfirm, ...data } = body
+        const { 
+            step, 
+            applicationId, 
+            password, 
+            passwordConfirm,
+            contractSigned,
+            contractVerifyCode,
+            ...data 
+        } = body
 
         // Limpiar datos clave
         if (data.rut) data.rut = data.rut.replace(/[.\-]/g, '')
