@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Search, MapPin, Phone, MessageSquare, CheckCircle, Clock, TrendingUp, Users, Package, DollarSign, Activity, AlertTriangle, Bike, Car, Zap, XCircle, FileText, Eye, ChevronDown, User2, Trash2, Store, LayoutDashboard, Settings, Bell, LogOut, ChevronRight, Menu, Filter, Map, Plus, BarChart3, Tag } from "lucide-react"
 import { ReportsModule } from "./ReportsModule"
-import { resolveTicket, approveDriverApplication, rejectDriverApplication, requestDocsDriverApplication, deleteDriverApplication, updateRestaurantCommission, approveRestaurantApplication, rejectRestaurantApplication, requestDocsRestaurantApplication, updateUserStatus, updateUserRole, adminUpdateOrderStatus, adminCancelOrder, createDeliveryZone, updateDeliveryZone, deleteDeliveryZone } from "./actions"
+import { resolveTicket, approveDriverApplication, rejectDriverApplication, requestDocsDriverApplication, deleteDriverApplication, clearDraftDriverApplications, updateRestaurantCommission, approveRestaurantApplication, rejectRestaurantApplication, requestDocsRestaurantApplication, updateUserStatus, updateUserRole, adminUpdateOrderStatus, adminCancelOrder, createDeliveryZone, updateDeliveryZone, deleteDeliveryZone } from "./actions"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
@@ -899,6 +899,28 @@ export function BackofficeDashboard({ initialTickets, initialUsers, driverApplic
                                             <CardDescription className="text-gray-500 mt-1">Revisa, aprueba o rechaza solicitudes de nuevos drivers.</CardDescription>
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={async () => {
+                                                    if(confirm("¿Estás seguro de que deseas eliminar TODOS los borradores (drafts)? Esta acción es irreversible.")) {
+                                                        setActionLoading('clear-drafts');
+                                                        const res = await clearDraftDriverApplications();
+                                                        if(res?.error) alert(res.error);
+                                                        else {
+                                                            alert(`Se eliminaron ${res?.count} drafts exitosamente.`);
+                                                            router.refresh();
+                                                        }
+                                                        setActionLoading(null);
+                                                    }
+                                                }}
+                                                disabled={actionLoading === 'clear-drafts'}
+                                                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 font-bold"
+                                                title="Eliminar todos los Drafts"
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-1.5" />
+                                                Limpiar Drafts
+                                            </Button>
                                             <Input
                                                 placeholder="Buscar por nombre, RUT o email..."
                                                 className="h-9 w-72 shadow-sm border-gray-300"

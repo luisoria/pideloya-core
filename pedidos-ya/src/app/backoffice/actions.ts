@@ -238,6 +238,24 @@ export async function deleteDriverApplication(applicationId: string) {
         return { error: "Error eliminando el registro de forma definitiva." }
     }
 }
+
+export async function clearDraftDriverApplications() {
+    const session = await getSession()
+    if (!session || session.role !== "ADMIN") {
+        return { error: "No autorizado. Solo admins pueden realizar esta acción." }
+    }
+
+    try {
+        const result = await prisma.driverApplication.deleteMany({
+            where: { status: 'DRAFT' }
+        })
+        revalidatePath("/backoffice")
+        return { success: true, count: result.count }
+    } catch (e) {
+        console.error('[CLEAR DRAFTS ERROR]', e)
+        return { error: "Error eliminando los registros en borrador." }
+    }
+}
 export async function approveRestaurantApplication(applicationId: string) {
     const session = await getSession()
     if (!session || session.role !== "ADMIN") return { error: "No autorizado" }
