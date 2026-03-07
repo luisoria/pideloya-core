@@ -13,7 +13,14 @@ export default async function RestaurantPage({ params }: { params: { id: string 
     const restaurant: any = await (prisma as any).restaurant.findUnique({
         where: { id },
         include: {
-            products: true,
+            products: {
+                include: {
+                    productReviews: {
+                        include: { customer: true },
+                        orderBy: { createdAt: "desc" }
+                    }
+                }
+            },
             reviews: {
                 include: { customer: true },
                 orderBy: { createdAt: "desc" },

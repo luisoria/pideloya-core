@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Plus, Minus, Trash2, Clock, ShoppingBag, AlertCircle } from "lucide-react"
+import { Plus, Minus, Trash2, Clock, ShoppingBag, AlertCircle, Star } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import Link from "next/link"
 import { Modal } from "@/components/ui/Modal"
@@ -178,7 +178,18 @@ export function MenuClient({ products, restaurantId, restaurantName, isOpen, ope
                                     <CardDescription className="text-xs line-clamp-2">{product.description}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-3 pt-2 flex items-center justify-between shrink-0">
-                                    <span className="font-bold text-red-600">${product.price.toLocaleString("es-CL")}</span>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="font-bold text-red-600">${product.price.toLocaleString("es-CL")}</span>
+                                        {product.productReviews && product.productReviews.length > 0 && (
+                                            <div className="flex items-center gap-1">
+                                                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                                <span className="text-[10px] font-black text-amber-600">
+                                                    {(product.productReviews.reduce((s: number, r: any) => s + r.rating, 0) / product.productReviews.length).toFixed(1)}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400">({product.productReviews.length})</span>
+                                            </div>
+                                        )}
+                                    </div>
                                     <Button
                                         size="sm"
                                         variant="ghost"
