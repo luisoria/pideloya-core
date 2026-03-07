@@ -15,7 +15,7 @@ export interface CartItem {
 
 interface CartContextType {
     items: CartItem[]
-    addToCart: (item: Omit<CartItem, "quantity" | "notes">) => void
+    addToCart: (item: Omit<CartItem, "quantity" | "notes">) => boolean
     addManyToCart: (items: CartItem[]) => void
     removeFromCart: (itemId: string) => void
     removeFromRestaurant: (restaurantId: string) => void

@@ -32,7 +32,6 @@ export default function CartPage() {
 
     const restaurantName = items.length > 0 ? items[0].restaurantName || "Restaurante" : ""
 
-    const cartList = Object.values(groupedCarts);
 
     // Coupon state
     const [couponInput, setCouponInput] = useState("")
@@ -218,7 +217,7 @@ export default function CartPage() {
                     </button>
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Pago Seguro</h1>
-                        <p className="text-xs text-gray-500 font-medium">Tus datos están protegidos con encriptación SSL en <span className="text-[var(--primary)] font-bold">{groupedCarts[selectedRestaurantId!]?.name || 'Restaurante'}</span></p>
+                        <p className="text-xs text-gray-500 font-medium">Tus datos están protegidos con encriptación SSL en <span className="text-[var(--primary)] font-bold">{restaurantName}</span></p>
                     </div>
                 </div>
 
