@@ -16,6 +16,7 @@ export async function POST(req: Request) {
             passwordConfirm,
             contractSigned,
             contractVerifyCode,
+            contractFullname,
             ...data 
         } = body
 
@@ -42,8 +43,8 @@ export async function POST(req: Request) {
                     }, { status: 403 })
                 }
 
-                if (step === 9 && data.contractFullname) {
-                    const hashData = `${applicationId}-${data.contractFullname}-${new Date().getTime()}`;
+                if (step === 9 && contractFullname) {
+                    const hashData = `${applicationId}-${contractFullname}-${new Date().getTime()}`;
                     const hash = crypto.createHash('sha256').update(hashData).digest('hex');
                     const validationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
                     data.contractSignatureHash = hash;
