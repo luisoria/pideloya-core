@@ -8,6 +8,7 @@ export interface CartItem {
     price: number
     quantity: number
     restaurantId: string
+    restaurantName?: string
     image?: string
     notes?: string
 }
@@ -17,6 +18,7 @@ interface CartContextType {
     addToCart: (item: Omit<CartItem, "quantity" | "notes">) => void
     addManyToCart: (items: CartItem[]) => void
     removeFromCart: (itemId: string) => void
+    removeFromRestaurant: (restaurantId: string) => void
     updateQuantity: (itemId: string, quantity: number) => void
     updateNotes: (itemId: string, notes: string) => void
     clearCart: () => void
@@ -66,6 +68,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setItems((prev) => prev.filter((item) => item.id !== itemId))
     }
 
+    const removeFromRestaurant = (restaurantId: string) => {
+        setItems((prev) => prev.filter((item) => item.restaurantId !== restaurantId))
+        // Reset coupon if it was for this restaurant
+        setCouponCode(null)
+        setDiscountAmount(0)
+    }
+
     const updateQuantity = (itemId: string, quantity: number) => {
         if (quantity <= 0) {
             removeFromCart(itemId)
@@ -101,7 +110,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <CartContext.Provider value={{
-            items, addToCart, addManyToCart, removeFromCart, updateQuantity, updateNotes, clearCart,
+            items, addToCart, addManyToCart, removeFromCart, removeFromRestaurant, updateQuantity, updateNotes, clearCart,
             total, itemCount, couponCode, discountAmount, setCouponData
         }}>
             {children}

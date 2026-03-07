@@ -119,6 +119,7 @@ export default async function RestaurantPage({ params }: { params: { id: string 
                 <MenuClient 
                     products={restaurant.products} 
                     restaurantId={restaurant.id} 
+                    restaurantName={restaurant.name}
                     isOpen={isRestaurantOpen({ openTime: restaurant.openTime, closeTime: restaurant.closeTime, acceptingOrders: restaurant.acceptingOrders })}
                     openTime={restaurant.openTime}
                     closeTime={restaurant.closeTime}

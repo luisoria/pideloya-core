@@ -3,6 +3,7 @@ import { ShoppingBag, Menu } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { getSession } from "@/lib/auth"
 import { UserMenu } from "./UserMenu"
+import { CartButton } from "./CartButton"
 
 export async function Navbar() {
     const session = await getSession()
@@ -63,6 +64,7 @@ export async function Navbar() {
                 </nav>
 
                 <div className="flex items-center gap-4">
+                    {session?.role === "CUSTOMER" && <CartButton />}
                     {session ? (
                         <UserMenu user={session} />
                     ) : (

@@ -14,9 +14,10 @@ const isImageUrl = (url: string | null | undefined) => {
     return url.startsWith("http") || url.startsWith("/") || url.startsWith("data:image") || /\.(jpeg|jpg|gif|png|webp|svg)/i.test(url)
 }
 
-export function MenuClient({ products, restaurantId, isOpen, openTime, closeTime }: { 
+export function MenuClient({ products, restaurantId, restaurantName, isOpen, openTime, closeTime }: { 
     products: any[], 
     restaurantId: string,
+    restaurantName: string,
     isOpen: boolean,
     openTime: string,
     closeTime: string
@@ -34,6 +35,7 @@ export function MenuClient({ products, restaurantId, isOpen, openTime, closeTime
             name: product.name,
             price: product.price,
             restaurantId: restaurantId,
+            restaurantName: restaurantName,
             image: product.image
         })
     }
