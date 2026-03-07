@@ -297,7 +297,7 @@ export default function RegistroDriverPage() {
         console.log('[DB] Guardando etapa:', step)
         try {
             const body: any = { step, applicationId: appId, ...form }
-            if (step === (shouldSkipStep6 ? 8 : 9)) body.status = 'SUBMITTED'
+            if (step === 10) body.status = 'IN_REVIEW'
 
             const res = await fetch('/api/driver-applications', {
                 method: 'POST',
@@ -385,7 +385,7 @@ export default function RegistroDriverPage() {
         const saved = await saveStep()
         if (!saved) return
 
-        if (step === (shouldSkipStep6 ? 9 : 10)) {
+        if (step === 10) {
             setScreen('done')
         } else {
             setStep(s => s + 1)
@@ -1063,7 +1063,7 @@ export default function RegistroDriverPage() {
                         <button className="dr-btn-back" onClick={prevStep} disabled={isLocked}>← Atrás</button>
                     )}
                     <button className="dr-btn-next" onClick={nextStep} disabled={isLocked}>
-                        {step === (shouldSkipStep6 ? 9 : 10) ? '✅ Enviar Solicitud' : `Continuar →`}
+                        {step === 10 ? '✅ Enviar Solicitud' : `Continuar →`}
                     </button>
                 </div>
             </div>
