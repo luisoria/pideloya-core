@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer'
 
 const smtpConfig = {
-    host: process.env.SMTP_HOST || 'mail.enigmasecurity.cl',
+    host: process.env.SMTP_HOST || 'smtp.hostinger.com',
     port: Number(process.env.SMTP_PORT) || 465,
     secure: Number(process.env.SMTP_PORT) === 465,
     auth: {
