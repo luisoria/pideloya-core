@@ -3,10 +3,10 @@
 import { useState } from "react"
 
 interface ClientImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-    fallbackSrc: string
+    fallbackSrc?: string
 }
 
-export function ClientImage({ fallbackSrc, src, alt, ...props }: ClientImageProps) {
+export function ClientImage({ fallbackSrc = "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&q=80", src, alt, ...props }: ClientImageProps) {
     const [imgSrc, setImgSrc] = useState(src || fallbackSrc)
 
     return (
