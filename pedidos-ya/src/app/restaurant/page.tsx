@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import './registro.css'
 import { CheckCircle, Upload, FileText, Store, MapPin, ShieldCheck, ArrowRight, ArrowLeft, Send, Search, Package, TrendingUp, DollarSign } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 /* ═══════════════════════════════════════
    DATOS CHILE (Reutilizados del driver para consistencia)
