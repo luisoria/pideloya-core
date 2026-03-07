@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { useState, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { addProduct, updateProduct, deleteProduct, updateOrderStatus } from "./actions"
+import { addProduct, updateProduct, deleteProduct, updateOrderStatus, updateRestaurantSettings } from "./actions"
 import jsPDF from "jspdf"
 import { toPng } from "html-to-image"
 
@@ -44,10 +44,15 @@ export function PartnerDashboard({
     const [prodForm, setProdForm] = useState({ name: "", description: "", price: 0, image: "" })
 
     const [settings, setSettings] = useState({
-        openTime: "09:00", closeTime: "23:00", preparation: 25,
-        deliveryRadiusKm: 5, minOrder: 5000, acceptingOrders: true,
-        deliveryZones: "Santiago Centro, Providencia, Ñuñoa, Las Condes",
-        contactPhone: restaurant.phone || "", address: restaurant.address || "",
+        openTime: restaurant.openTime || "09:00",
+        closeTime: restaurant.closeTime || "23:00",
+        preparation: restaurant.preparation ?? 25,
+        deliveryRadiusKm: restaurant.deliveryRadiusKm ?? 5.0,
+        minOrder: restaurant.minOrder ?? 5000,
+        acceptingOrders: restaurant.acceptingOrders ?? true,
+        deliveryZones: restaurant.deliveryZones || "Santiago Centro, Providencia, Ñuñoa, Las Condes",
+        contactPhone: restaurant.phone || "",
+        address: restaurant.address || "",
     })
 
     const handleSaveProduct = async (e: React.FormEvent) => {
@@ -67,6 +72,28 @@ export function PartnerDashboard({
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
         setLoading(orderId); await updateOrderStatus(orderId, status); setLoading(null); router.refresh()
+    }
+
+    const handleSaveSettings = async () => {
+        setLoading("settings")
+        const res = await updateRestaurantSettings({
+            openTime: settings.openTime,
+            closeTime: settings.closeTime,
+            acceptingOrders: settings.acceptingOrders,
+            preparation: settings.preparation,
+            deliveryRadiusKm: settings.deliveryRadiusKm,
+            minOrder: settings.minOrder,
+            deliveryZones: settings.deliveryZones,
+            address: settings.address,
+            phone: settings.contactPhone
+        })
+        setLoading(null)
+        if (res.success) {
+            alert("✅ Configuración guardada correctamente")
+            router.refresh()
+        } else {
+            alert("❌ Error al guardar: " + res.error)
+        }
     }
 
     const tabs = [
@@ -185,8 +212,8 @@ export function PartnerDashboard({
                     <p className="text-sm text-gray-500">{restaurant.name} · Comisión {restaurant.commissionRate}%</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Badge className={`${settings.acceptingOrders ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} border-none font-bold text-sm py-1.5 px-4`}>
-                        {settings.acceptingOrders ? '● ABIERTO' : '● CERRADO'}
+                    <Badge className={`${restaurant.acceptingOrders ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} border-none font-bold text-sm py-1.5 px-4`}>
+                        {restaurant.acceptingOrders ? '● ABIERTO' : '● CERRADO'}
                     </Badge>
                 </div>
             </div>
@@ -207,7 +234,7 @@ export function PartnerDashboard({
                     >
                         {tab.icon}
                         {tab.label}
-                        {tab.badge && tab.badge > 0 && (
+                        {!!tab.badge && tab.badge > 0 && (
                             <span className="bg-red-500 text-white text-sm font-black h-5 w-5 rounded-full flex items-center justify-center">{tab.badge}</span>
                         )}
                     </button>
@@ -599,7 +626,7 @@ export function PartnerDashboard({
                         </CardContent>
                     </Card>
 
-                    <Button onClick={() => { setLoading("settings"); setTimeout(() => { setLoading(null); alert("✅ Configuración guardada") }, 600) }}
+                    <Button onClick={handleSaveSettings}
                         disabled={loading === "settings"}
                         className="h-10 bg-red-600 hover:bg-red-700 text-white font-bold px-8 rounded-lg text-sm uppercase w-full sm:w-auto">
                         {loading === "settings" ? "Guardando..." : "Guardar Configuración"}

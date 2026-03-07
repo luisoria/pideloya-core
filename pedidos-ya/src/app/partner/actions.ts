@@ -10,8 +10,22 @@ export async function getPartnerData() {
         return { error: "No autorizado" }
     }
 
-    const restaurant = await prisma.restaurant.findUnique({
-        where: { ownerId: session.id },
+    // 1. Asegurar que el usuario exista en la DB (por si se borró en el seed)
+    let user = await prisma.user.findUnique({ where: { id: session.id } })
+    if (!user) {
+        user = await prisma.user.create({
+            data: {
+                id: session.id,
+                email: session.email || `partner-${session.id}@test.com`,
+                name: session.name || "Socio",
+                role: "RESTAURANT"
+            }
+        })
+    }
+
+    // 2. Buscar o crear el restaurante vinculado
+    let restaurant = await prisma.restaurant.findUnique({
+        where: { ownerId: user.id },
         include: {
             products: true,
             orders: {
@@ -32,7 +46,23 @@ export async function getPartnerData() {
         }
     })
 
-    if (!restaurant) return { error: "Restaurante no configurado" }
+    if (!restaurant) {
+        restaurant = await prisma.restaurant.create({
+            data: {
+                name: `Mi Local (${user.name})`,
+                phone: "+569 0000 0000",
+                address: "Dirección de demostración",
+                category: "Burgers",
+                image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80",
+                ownerId: user.id
+            },
+            include: {
+                products: true,
+                orders: { include: { customer: true, items: { include: { product: true } }, driver: true, couponUsage: true } },
+                reviews: { include: { customer: true } }
+            }
+        })
+    }
 
     // Aggregate stats
     const totalSales = restaurant.orders.reduce((acc: number, o: { total: number }) => acc + o.total, 0)
@@ -134,5 +164,32 @@ export async function updateOrderStatus(orderId: string, status: string) {
         return { success: true }
     } catch (e) {
         return { error: "Error actualizando orden" }
+    }
+}
+
+export async function updateRestaurantSettings(data: {
+    openTime?: string;
+    closeTime?: string;
+    acceptingOrders?: boolean;
+    preparation?: number;
+    deliveryRadiusKm?: number;
+    minOrder?: number;
+    deliveryZones?: string;
+    address?: string;
+    phone?: string;
+}) {
+    const session = await getSession()
+    if (!session || session.role !== "RESTAURANT") return { error: "No autorizado" }
+
+    try {
+        await prisma.restaurant.update({
+            where: { ownerId: session.id },
+            data
+        })
+        revalidatePath("/partner")
+        return { success: true }
+    } catch (e: any) {
+        console.error("[SETTINGS_ERROR]", e)
+        return { error: "Error actualizando configuración" }
     }
 }

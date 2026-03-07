@@ -88,6 +88,15 @@ model Restaurant {
   // Commission settings (managed by admin)
   commissionRate Float    @default(15.0) // Percentage per order
   
+  // Schedule settings (Premium feature)
+  openTime       String   @default("09:00")
+  closeTime      String   @default("23:00")
+  acceptingOrders Boolean  @default(true)
+  preparation    Int      @default(25)
+  deliveryRadiusKm Float    @default(5.0)
+  minOrder       Float    @default(5000.0)
+  deliveryZones  String   @default("Santiago Centro, Providencia, Ñuñoa, Las Condes")
+  
   products    Product[]
   orders      Order[]
   reviews     Review[]

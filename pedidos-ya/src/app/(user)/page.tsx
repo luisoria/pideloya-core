@@ -1,11 +1,11 @@
-import { Star, Clock, Bike, UtensilsCrossed, Flame, TrendingUp, Zap } from "lucide-react"
-import { prisma } from "@/lib/prisma"
+import { Flame, TrendingUp, Zap } from "lucide-react"
 import Link from "next/link"
+import { prisma } from "@/lib/prisma"
 import { Suspense } from "react"
 import { SearchFilters } from "@/components/SearchFilters"
 import { getSession } from "@/lib/auth"
-import { ToggleFavorite } from "@/components/ToggleFavorite"
-import { ClientImage } from "@/components/ui/ClientImage"
+import { isRestaurantOpen } from "@/lib/utils"
+import { RestaurantCard } from "@/components/RestaurantCard"
 
 type PageProps = {
     searchParams: Promise<{ q?: string; cat?: string }>
@@ -65,8 +65,9 @@ export default async function HomePage({ searchParams }: PageProps) {
             : null
 
         const rCoupons = activeCoupons.filter(c => c.restaurantId === r.id || c.restaurantId === null)
+        const isOpen = isRestaurantOpen({ openTime: r.openTime, closeTime: r.closeTime, acceptingOrders: r.acceptingOrders })
 
-        return { ...r, avgRating, reviewCount: r.reviews.length, isFavorite: favIds.has(r.id), coupons: rCoupons }
+        return { ...r, avgRating, reviewCount: r.reviews.length, isFavorite: favIds.has(r.id), coupons: rCoupons, isOpen }
     })
 
     // Promos mock data 
@@ -181,102 +182,11 @@ export default async function HomePage({ searchParams }: PageProps) {
                 {/* Restaurant Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {restaurantsWithRating.map((restaurant) => (
-                        <div key={restaurant.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 hover:border-red-100 transition-all duration-300 h-full flex flex-col relative">
-                            {/* Favorite button */}
-                            {session && (
-                                <div className="absolute top-3 right-3 z-20">
-                                    <ToggleFavorite
-                                        restaurantId={restaurant.id}
-                                        isFavorite={restaurant.isFavorite}
-                                    />
-                                </div>
-                            )}
-
-                            <Link href={`/restaurant/${restaurant.id}`} className="flex flex-col h-full">
-                                {/* Image */}
-                                <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-                                    <ClientImage
-                                        src={restaurant.image || `https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&q=80`}
-                                        fallbackSrc="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&q=80"
-                                        alt={restaurant.name}
-                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                    />
-                                    {/* Gradient overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                                    {/* Badges container */}
-                                    <div className="absolute top-3 left-3 flex flex-col gap-2 items-start">
-                                        <span className="bg-white/95 text-gray-800 text-xs font-bold shadow-sm px-2.5 py-1 rounded-full">
-                                            {restaurant.category}
-                                        </span>
-                                        {restaurant.coupons?.length > 0 && (
-                                            <span
-                                                className="bg-red-600 text-white text-xs font-bold shadow-lg px-2.5 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wide"
-                                                title={restaurant.coupons[0].description || "Aprovecha este descuento"}
-                                            >
-                                                <span>🏷️</span> Cupón Disponible
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Rating badge */}
-                                    <div className="absolute bottom-3 left-3">
-                                        <div className="flex items-center gap-1 text-xs font-bold bg-green-500 text-white px-2.5 py-1 rounded-full shadow-md">
-                                            <Star className="h-3 w-3 fill-current" />
-                                            {restaurant.avgRating ? restaurant.avgRating.toFixed(1) : "Nuevo"}
-                                            {restaurant.reviewCount > 0 && (
-                                                <span className="text-white/70 font-medium ml-0.5">
-                                                    ({restaurant.reviewCount})
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Delivery time on hover */}
-                                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="flex items-center gap-1.5 text-xs text-white font-semibold bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full">
-                                            <Zap className="h-3 w-3" />
-                                            20-35 min
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Info */}
-                                <div className="p-4 flex flex-col flex-1">
-                                    <div className="flex items-start justify-between gap-2 mb-2">
-                                        <h3 className="font-black text-gray-900 text-base leading-tight group-hover:text-red-600 transition-colors">
-                                            {restaurant.name}
-                                        </h3>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="h-3.5 w-3.5" /> 20–35 min
-                                        </span>
-                                        <span className="text-gray-200">·</span>
-                                        <span className="flex items-center gap-1 text-green-600 font-semibold">
-                                            <Bike className="h-3.5 w-3.5" /> Envío gratis
-                                        </span>
-                                    </div>
-
-                                    {/* Mini product preview */}
-                                    {restaurant.products.length > 0 && (
-                                        <div className="mt-auto pt-3 border-t border-gray-50">
-                                            <p className="text-xs text-gray-400 font-medium mb-1.5 flex items-center gap-1">
-                                                <UtensilsCrossed className="h-3 w-3" />
-                                                Más pedido
-                                            </p>
-                                            <p className="text-xs text-gray-600 font-semibold truncate">
-                                                {restaurant.products[0].name}
-                                                <span className="text-green-600 ml-2">
-                                                    ${restaurant.products[0].price.toLocaleString("es-CL")}
-                                                </span>
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </Link>
-                        </div>
+                        <RestaurantCard 
+                            key={restaurant.id} 
+                            restaurant={restaurant} 
+                            session={session} 
+                        />
                     ))}
                 </div>
             </div>

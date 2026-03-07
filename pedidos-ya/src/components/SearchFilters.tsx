@@ -8,10 +8,10 @@ const CATEGORIES = [
     { name: "Burgers", emoji: "🍔", db: "Burgers" },
     { name: "Pizza", emoji: "🍕", db: "Pizza" },
     { name: "Sushi", emoji: "🍣", db: "Sushi" },
-    { name: "Pollo", emoji: "🍗", db: "Chicken" },
-    { name: "Chilena", emoji: "🫔", db: "Comida Chilena" },
-    { name: "Saludable", emoji: "🥗", db: "Healthy" },
-    { name: "Postres", emoji: "🍦", db: "Dessert" },
+    { name: "Pollo", emoji: "🍗", db: "Pollo" },
+    { name: "Chilena", emoji: "🫔", db: "Chilena" },
+    { name: "Saludable", emoji: "🥗", db: "Saludable" },
+    { name: "Postres", emoji: "🍩", db: "Postres" },
 ]
 
 export function SearchFilters({ initialSearch = "", initialCategory = "" }: {

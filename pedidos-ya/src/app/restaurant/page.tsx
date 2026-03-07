@@ -155,38 +155,53 @@ export default function RestaurantRegistrationPage() {
         return (
             <div className="res-portal">
                 <section className="res-hero">
-                    <div className="flex justify-center mb-8">
-                        <div className="bg-red-600/10 border border-red-600/30 px-6 py-2 rounded-full text-red-600 font-bold text-sm tracking-widest uppercase">
+                    <div className="flex justify-center mb-10 translate-y-0">
+                        <div className="bg-red-600/10 border border-red-600/30 px-6 py-2 rounded-full text-red-600 font-bold text-xs tracking-[0.2em] uppercase backdrop-blur-sm animate-pulse-soft">
                             Para Negocios y Restaurantes
                         </div>
                     </div>
-                    <h1>Vende más con <span className="highlight">PideloYA</span></h1>
-                    <p className="text-res-text-muted max-w-2xl mx-auto text-lg leading-relaxed mb-12">
+                    
+                    <h1 className="animate-in fade-in slide-in-from-bottom-6 duration-700">
+                        Vende más con <span className="highlight">PideloYA</span>
+                    </h1>
+                    
+                    <p className="text-res-text-muted mx-auto text-lg md:text-xl leading-relaxed mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
                         Únete a la red más grande de Chile. Digitaliza tu menú, gestiona tus pedidos en tiempo real
                         y llega a miles de nuevos clientes sin complicaciones.
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-16">
-                        <div className="bg-res-surface p-8 rounded-2xl border border-res-border hover:border-res-primary transition-all">
-                            <div className="text-4xl mb-4">🚀</div>
-                            <h3 className="font-black text-xl mb-2 italic">MAYOR ALCANCE</h3>
-                            <p className="text-sm text-res-text-muted">Aumenta tus ventas hasta un 40% llegando a zonas que antes no podías.</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mx-auto mb-20 px-4">
+                        <div className="bg-res-surface/50 backdrop-blur-md p-8 rounded-[2.5rem] border border-res-border hover:border-res-primary/50 hover:bg-res-surface transition-all duration-500 group animate-in fade-in zoom-in-95 duration-700 delay-200 text-center">
+                            <div className="h-16 w-16 bg-red-600/10 rounded-2xl flex items-center justify-center text-3xl mb-6 mx-auto group-hover:scale-110 transition-transform">🚀</div>
+                            <h3 className="font-black text-xl mb-3 italic tracking-tighter text-center">MAYOR ALCANCE</h3>
+                            <p className="text-sm text-res-text-muted leading-relaxed text-center">Aumenta tus ventas hasta un 40% llegando a zonas que antes no podías.</p>
                         </div>
-                        <div className="bg-res-surface p-8 rounded-2xl border border-res-border hover:border-res-primary transition-all">
-                            <div className="text-4xl mb-4">📱</div>
-                            <h3 className="font-black text-xl mb-2 italic">GESTIÓN FÁCIL</h3>
-                            <p className="text-sm text-res-text-muted">Recibe y gestiona pedidos desde una tablet intuitiva diseñada para tu cocina.</p>
+                        <div className="bg-res-surface/50 backdrop-blur-md p-8 rounded-[2.5rem] border border-res-border hover:border-res-primary/50 hover:bg-res-surface transition-all duration-500 group animate-in fade-in zoom-in-95 duration-700 delay-300 text-center">
+                            <div className="h-16 w-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-3xl mb-6 mx-auto group-hover:scale-110 transition-transform">📱</div>
+                            <h3 className="font-black text-xl mb-3 italic tracking-tighter text-center">GESTIÓN FÁCIL</h3>
+                            <p className="text-sm text-res-text-muted leading-relaxed text-center">Recibe y gestiona pedidos desde una tablet intuitiva diseñada para tu cocina.</p>
                         </div>
-                        <div className="bg-res-surface p-8 rounded-2xl border border-res-border hover:border-res-primary transition-all">
-                            <div className="text-4xl mb-4">💳</div>
-                            <h3 className="font-black text-xl mb-2 italic">PAGOS RÁPIDOS</h3>
-                            <p className="text-sm text-res-text-muted">Liquidaciones semanales transparentes con todo el detalle de tus comisiones.</p>
+                        <div className="bg-res-surface/50 backdrop-blur-md p-8 rounded-[2.5rem] border border-res-border hover:border-res-primary/50 hover:bg-res-surface transition-all duration-500 group animate-in fade-in zoom-in-95 duration-700 delay-400 text-center">
+                            <div className="h-16 w-16 bg-green-500/10 rounded-2xl flex items-center justify-center text-3xl mb-6 mx-auto group-hover:scale-110 transition-transform">💳</div>
+                            <h3 className="font-black text-xl mb-3 italic tracking-tighter text-center">PAGOS RÁPIDOS</h3>
+                            <p className="text-sm text-res-text-muted leading-relaxed text-center">Liquidaciones semanales transparentes con todo el detalle de tus comisiones.</p>
                         </div>
                     </div>
-                    <button className="res-btn-primary max-w-xs" onClick={() => setScreen('form')}>
-                        Registrar mi local ahora
-                    </button>
-                    <div className="mt-8 text-res-text-muted text-sm cursor-pointer hover:text-white underline">
-                        ¿Ya tienes una cuenta? Iniciar Sesión Partner
+                    
+                    <div className="flex flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-500">
+                        <button 
+                            className="res-btn-primary max-w-sm" 
+                            onClick={() => setScreen('form')}
+                        >
+                            Registrar mi local ahora
+                        </button>
+                        
+                        <div className="text-res-text-muted text-sm font-medium">
+                            ¿Ya tienes una cuenta? {' '}
+                            <Link href="/login" className="text-white hover:text-res-primary underline underline-offset-4 transition-colors">
+                                Iniciar Sesión Partner
+                            </Link>
+                        </div>
                     </div>
                 </section>
             </div>

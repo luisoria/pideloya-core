@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth"
 import { ReviewSection } from "./ReviewSection"
 import { ClientImage } from "@/components/ui/ClientImage"
 import { CouponBanner } from "./CouponBanner"
+import { isRestaurantOpen } from "@/lib/utils"
 
 export default async function RestaurantPage({ params }: { params: { id: string } }) {
     const { id } = await params
@@ -115,7 +116,13 @@ export default async function RestaurantPage({ params }: { params: { id: string 
                 <h2 className="text-2xl font-black mb-6 border-l-4 border-[var(--primary)] pl-3 text-gray-900">
                     Nuestro Menú
                 </h2>
-                <MenuClient products={restaurant.products} restaurantId={restaurant.id} />
+                <MenuClient 
+                    products={restaurant.products} 
+                    restaurantId={restaurant.id} 
+                    isOpen={isRestaurantOpen({ openTime: restaurant.openTime, closeTime: restaurant.closeTime, acceptingOrders: restaurant.acceptingOrders })}
+                    openTime={restaurant.openTime}
+                    closeTime={restaurant.closeTime}
+                />
 
                 {/* Reviews Section */}
                 <div className="mt-12">
