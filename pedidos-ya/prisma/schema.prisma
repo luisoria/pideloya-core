@@ -197,6 +197,47 @@ model Order {
   items        OrderItem[]
   couponUsage  CouponUsage?
   productReviews ProductReview[] @relation("OrderProductReviews")
+  
+  // Messaging & Incidents (QA)
+  incident     Incident?
+  isReassigned Boolean   @default(false)
+  originLat    Float?    // Pickup point for reassignment (Dynamic Origin)
+  originLon    Float?
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  orderId   String?  // Linked to a specific order chat
+  senderId  String
+  receiverId String? // Null if Broadcast
+  content   String
+  type      String   @default("TEXT") // TEXT, IMAGE, SYSTEM, GEO_BROADCAST
+  status    String   @default("SENT") // SENT, DELIVERED, READ
+  createdAt DateTime @default(now())
+
+  // Metadata for dynamic groups
+  targetGroup String? // e.g. "active_drivers_santiago"
+}
+
+model Incident {
+  id              String   @id @default(uuid())
+  orderId         String   @unique
+  order           Order    @relation(fields: [orderId], references: [id])
+  reporterId      String   // Driver ID who reported
+  type            String   // IMPOSSIBLE_DELIVERY, VEHICLE_BREAKDOWN, ACCIDENT
+  description     String
+  status          String   @default("PENDING") // PENDING, REASSIGNED, RESOLVED, CANCELLED
+  
+  // Real-time location capture during alert
+  lastLat         Float
+  lastLon         Float
+  
+  // Re-assignment tracking
+  isRepublished   Boolean  @default(false)
+  newOrderId      String?  // Reference to the new order generated
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model OrderItem {

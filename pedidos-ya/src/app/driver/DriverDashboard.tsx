@@ -13,6 +13,9 @@ import {
 } from "lucide-react"
 import { acceptOrderAsDriver, deliverOrder } from "@/app/actions/orders"
 import { useRouter } from "next/navigation"
+import { QAChatModal } from "./QAChatModal"
+import { QAIncidentModal } from "./QAIncidentModal"
+import { MessageSquare } from "lucide-react"
 
 interface EarningsData {
     today: { deliveries: number; earnings: number }
@@ -37,6 +40,8 @@ export function DriverDashboard({
     const router = useRouter()
     const [isUpdating, setIsUpdating] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<Tab>(activeOrders.length > 0 ? 'active' : 'orders')
+    const [isChatOpen, setIsChatOpen] = useState(false)
+    const [isIncidentOpen, setIsIncidentOpen] = useState(false)
 
     const currentOrder = activeOrders.length > 0 ? activeOrders[0] : null
 
@@ -278,8 +283,43 @@ export function DriverDashboard({
                                                 <CheckCircle className="mr-2 h-4 w-4" /> Entregado
                                             </Button>
                                         </div>
+
+                                        {/* QA Features */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Button
+                                                variant="outline"
+                                                className="h-10 text-xs font-bold rounded-xl border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                                                onClick={() => setIsChatOpen(true)}
+                                            >
+                                                <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Chat QA
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                className="h-10 text-xs font-bold rounded-xl border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                                                onClick={() => setIsIncidentOpen(true)}
+                                            >
+                                                <AlertCircle className="mr-1.5 h-3.5 w-3.5" /> Incidencia
+                                            </Button>
+                                        </div>
                                     </CardContent>
                                 </Card>
+                                
+                                <QAChatModal 
+                                    isOpen={isChatOpen} 
+                                    onClose={() => setIsChatOpen(false)} 
+                                    orderId={currentOrder.id}
+                                    customerName={currentOrder.customer.name}
+                                />
+                                
+                                <QAIncidentModal 
+                                    isOpen={isIncidentOpen}
+                                    onClose={() => setIsIncidentOpen(false)}
+                                    orderId={currentOrder.id}
+                                    onSuccess={() => {
+                                        setActiveTab('orders')
+                                        router.refresh()
+                                    }}
+                                />
                             </div>
                         )}
                     </div>
