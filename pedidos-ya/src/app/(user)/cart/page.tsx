@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Trash2, ArrowLeft, Plus, Minus, CreditCard, MapPin, Clock, ShieldCheck, ChevronRight, MessageSquare } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Modal } from "@/components/ui/Modal"
 
 export default function CartPage() {
     const { items, removeFromCart, updateQuantity, updateNotes, clearCart, total, itemCount, couponCode, discountAmount, setCouponData } = useCart()
     const [isSuccessOpen, setSuccessOpen] = useState(false)
+    const [isSavedOpen, setSavedOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
     const [checkoutStep, setCheckoutStep] = useState<'cart' | 'payment'>('cart')
 
     // Coupon state
@@ -31,9 +33,43 @@ export default function CartPage() {
         paymentMethod: 'card' as 'card' | 'cash'
     })
 
-    const deliveryFee = total > 15000 ? 0 : 1990
-    const serviceFee = Math.round(total * 0.05)
-    const grandTotal = Math.max(0, total + deliveryFee + serviceFee - discountAmount)
+    // Validation State
+    const [isRestaurantOpen, setIsRestaurantOpen] = useState(true)
+    const [unavailableItems, setUnavailableItems] = useState<string[]>([])
+    const [isValidating, setIsValidating] = useState(false)
+
+    useEffect(() => {
+        if (items.length === 0) return
+        const validate = async () => {
+            setIsValidating(true)
+            try {
+                const { validateCart } = await import('@/app/actions/cart-validation')
+                const itemsToValidate = items.map(i => ({ productId: i.id, quantity: i.quantity }))
+                const res = await validateCart(items[0].restaurantId, itemsToValidate)
+                if (res && res.isOpen !== undefined) {
+                    setIsRestaurantOpen(res.isOpen)
+                    setUnavailableItems(res.unavailableProductIds || [])
+                }
+            } catch (error) {
+                console.error("Error validando carrito", error)
+            } finally {
+                setIsValidating(false)
+            }
+        }
+        validate()
+    }, [items])
+
+    // Recalculate based on available items only
+    const validItems = items.filter(i => !unavailableItems.includes(i.id))
+    const validTotal = validItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
+    const validItemCount = validItems.reduce((acc, item) => acc + item.quantity, 0)
+    
+    // Use validTotal instead of total
+    const deliveryFee = validTotal > 0 && validTotal > 15000 ? 0 : 1990
+    const serviceFee = Math.round(validTotal * 0.05)
+    let grandTotal = Math.max(0, validTotal + deliveryFee + serviceFee - discountAmount)
+    if (validTotal === 0) grandTotal = 0; // Prevent fees when cart is basically empty
+
 
     const handleApplyCoupon = async () => {
         if (!couponInput.trim()) return
@@ -67,12 +103,12 @@ export default function CartPage() {
     }
 
     const handleCheckout = async () => {
-        if (items.length === 0) return
+        if (validItems.length === 0 || !isRestaurantOpen) return
         setIsLoading(true)
         try {
             const { createOrder } = await import('@/app/actions/orders')
-            const restaurantId = items[0].restaurantId
-            const orderItems = items.map(item => ({
+            const restaurantId = validItems[0].restaurantId
+            const orderItems = validItems.map(item => ({
                 productId: item.id,
                 quantity: item.quantity,
                 price: item.price
@@ -89,6 +125,38 @@ export default function CartPage() {
 
     const handleCloseSuccess = () => {
         setSuccessOpen(false)
+        clearCart()
+        window.location.href = "/orders"
+    }
+
+    const handleSaveDraft = async () => {
+        if (validItems.length === 0) return
+        setIsSaving(true)
+        try {
+            const { saveOrderAsDraft } = await import('@/app/actions/orders')
+            const restaurantId = validItems[0].restaurantId
+            const orderItems = validItems.map(item => ({
+                productId: item.id,
+                quantity: item.quantity,
+                price: item.price
+            }))
+            
+            const res = await saveOrderAsDraft(restaurantId, grandTotal, orderItems, couponCode || undefined)
+            if (res.error) {
+                alert(res.error)
+            } else {
+                setSavedOpen(true)
+            }
+        } catch (error) {
+            console.error(error)
+            alert("Error al guardar el carrito.")
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleCloseSaved = () => {
+        setSavedOpen(false)
         clearCart()
         window.location.href = "/orders"
     }
@@ -228,7 +296,7 @@ export default function CartPage() {
                 <Card className="mb-6 rounded-2xl border-gray-200 bg-gray-50 overflow-hidden">
                     <CardContent className="p-6 space-y-3">
                         <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Resumen del pedido</h3>
-                        {items.map(item => (
+                        {validItems.map(item => (
                             <div key={item.id} className="flex justify-between text-sm text-gray-700">
                                 <span>{item.quantity}x {item.name}</span>
                                 <span className="font-bold">${(item.price * item.quantity).toLocaleString('es-CL')}</span>
@@ -237,10 +305,10 @@ export default function CartPage() {
                         <div className="border-t border-gray-200 pt-3 space-y-2">
                             <div className="flex justify-between text-sm text-gray-500">
                                 <span>Subtotal</span>
-                                <span>${total.toLocaleString('es-CL')}</span>
+                                <span>${validTotal.toLocaleString('es-CL')}</span>
                             </div>
                             <div className="flex justify-between text-sm text-gray-500">
-                                <span>Envío {total > 15000 && <span className="text-green-600 font-bold ml-1">GRATIS</span>}</span>
+                                <span>Envío {validTotal > 15000 && <span className="text-green-600 font-bold ml-1">GRATIS</span>}</span>
                                 <span>{deliveryFee === 0 ? '$0' : `$${deliveryFee.toLocaleString('es-CL')}`}</span>
                             </div>
                             <div className="flex justify-between text-sm text-gray-500">
@@ -303,16 +371,23 @@ export default function CartPage() {
             </div>
 
             <div className="space-y-4">
-                {items.map((item) => (
-                    <Card key={item.id} className="rounded-2xl border-gray-200 overflow-hidden hover:shadow-md transition-all">
+                {items.map((item) => {
+                    const isUnavailable = unavailableItems.includes(item.id)
+                    return (
+                    <Card key={item.id} className={`rounded-2xl border-gray-200 overflow-hidden transition-all ${isUnavailable ? 'opacity-60 bg-gray-50 grayscale' : 'hover:shadow-md'}`}>
                         <CardContent className="p-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-gray-900 truncate">{item.name}</h3>
+                                    <h3 className="font-bold text-gray-900 truncate">
+                                        {item.name} 
+                                        {isUnavailable && <span className="text-red-600 font-bold text-xs uppercase ml-2 px-2 py-0.5 bg-red-100 rounded">Sin Stock</span>}
+                                    </h3>
                                     <p className="text-sm text-gray-500 mt-0.5">${item.price.toLocaleString()} c/u</p>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-black text-gray-900 text-lg">${(item.price * item.quantity).toLocaleString()}</div>
+                                    <div className={`font-black text-lg ${isUnavailable ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                                        ${(item.price * item.quantity).toLocaleString()}
+                                    </div>
                                 </div>
                             </div>
 
@@ -356,11 +431,12 @@ export default function CartPage() {
                                     className="w-full h-9 px-3 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all"
                                     value={item.notes || ''}
                                     onChange={e => updateNotes(item.id, e.target.value)}
+                                    disabled={isUnavailable}
                                 />
                             </div>
                         </CardContent>
                     </Card>
-                ))}
+                )})}
             </div>
 
             {/* Coupon Section */}
@@ -418,26 +494,34 @@ export default function CartPage() {
             </div>
 
             {/* Totals */}
-            <div className="mt-8 bg-gray-50 rounded-2xl p-6 space-y-3 border border-gray-100">
-                <div className="flex justify-between text-sm text-gray-500">
-                    <span>Subtotal ({itemCount} items)</span>
-                    <span className="font-bold text-gray-700">${total.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-500">
-                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Envío estimado 20-35 min</span>
-                    <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
-                        {deliveryFee === 0 ? 'GRATIS' : `$${deliveryFee.toLocaleString()}`}
-                    </span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-500">
-                    <span>Cargo por servicio</span>
-                    <span className="font-bold text-gray-700">${serviceFee.toLocaleString()}</span>
-                </div>
-                {total < 15000 && (
-                    <div className="bg-yellow-50 text-yellow-700 text-xs font-bold px-3 py-2 rounded-lg border border-yellow-200">
-                        💡 Agrega ${(15000 - total).toLocaleString()} más para envío GRATIS
+            <div className="mt-8 bg-gray-50 rounded-2xl p-6 space-y-3 border border-gray-100 relative overflow-hidden">
+                {!isRestaurantOpen && (
+                    <div className="absolute top-0 left-0 right-0 p-3 bg-red-600 text-white text-center font-bold text-sm uppercase tracking-wider animate-pulse">
+                        ⚠️ El restaurante está cerrado (O cierra pronto)
                     </div>
                 )}
+                
+                <div className={`pt-${!isRestaurantOpen ? '8' : '0'}`}>
+                    <div className="flex justify-between text-sm text-gray-500">
+                        <span>Subtotal ({validItemCount} items)</span>
+                        <span className="font-bold text-gray-700">${validTotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-500 mt-3">
+                        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Envío estimado 20-35 min</span>
+                        <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                            {deliveryFee === 0 ? 'GRATIS' : `$${deliveryFee.toLocaleString()}`}
+                        </span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-500 mt-3">
+                        <span>Cargo por servicio</span>
+                        <span className="font-bold text-gray-700">${serviceFee.toLocaleString()}</span>
+                    </div>
+                    {validTotal > 0 && validTotal < 15000 && (
+                        <div className="bg-yellow-50 text-yellow-700 text-xs font-bold px-3 py-2 rounded-lg border border-yellow-200 mt-3">
+                            💡 Agrega ${(15000 - validTotal).toLocaleString()} más para envío GRATIS
+                        </div>
+                    )}
+                </div>
                 <div className="flex justify-between text-xl font-black text-gray-900 pt-3 border-t border-gray-200">
                     <span>Total</span>
                     <span>${grandTotal.toLocaleString()}</span>
@@ -446,10 +530,30 @@ export default function CartPage() {
 
             <Button
                 size="lg"
-                className="w-full mt-6 h-14 text-base font-black uppercase tracking-widest bg-[var(--primary)] hover:bg-red-700 shadow-xl shadow-red-200 rounded-xl flex items-center justify-center gap-2"
+                className={`w-full mt-6 h-14 text-base font-black uppercase tracking-widest flex items-center justify-center gap-2 rounded-xl transition-all ${
+                    !isRestaurantOpen || validItems.length === 0 || isValidating
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none border border-gray-300 hover:bg-gray-300'
+                    : 'bg-[var(--primary)] text-white hover:bg-red-700 shadow-xl shadow-red-200'
+                }`}
                 onClick={() => setCheckoutStep('payment')}
+                disabled={!isRestaurantOpen || validItems.length === 0 || isValidating}
             >
-                Proceder al pago <ChevronRight className="h-5 w-5" />
+                {isValidating 
+                    ? "Verificando..." 
+                    : (!isRestaurantOpen 
+                        ? "Cerrado" 
+                        : (validItems.length === 0 ? "¿Carrito Vacío?" : "Proceder al pago"))}
+                {(!isValidating && isRestaurantOpen && validItems.length > 0) && <ChevronRight className="h-5 w-5" />}
+            </Button>
+            
+            <Button
+                variant="outline"
+                size="lg"
+                className="w-full mt-3 h-14 text-base font-bold text-gray-700 border-2 border-gray-200 hover:bg-gray-100 rounded-xl flex items-center justify-center"
+                onClick={handleSaveDraft}
+                disabled={isSaving || validItems.length === 0}
+            >
+                {isSaving ? "Guardando..." : "Guardar para después 📌"}
             </Button>
 
             <Modal isOpen={isSuccessOpen} onClose={handleCloseSuccess} title="¡Pedido Confirmado!">
@@ -458,6 +562,15 @@ export default function CartPage() {
                     <p className="text-lg font-bold text-gray-900">¡Tu pedido ha sido confirmado!</p>
                     <p className="text-gray-500 text-sm mt-2">Puedes seguir el estado desde &quot;Mis Pedidos&quot;.</p>
                     <Button className="mt-6 w-full h-12 font-bold" onClick={handleCloseSuccess}>Ver mi pedido</Button>
+                </div>
+            </Modal>
+
+            <Modal isOpen={isSavedOpen} onClose={handleCloseSaved} title="¡Carrito Guardado!">
+                <div className="text-center py-6">
+                    <div className="text-6xl mb-4">📌</div>
+                    <p className="text-lg font-bold text-gray-900">Mantenemos tu carrito intacto</p>
+                    <p className="text-gray-500 text-sm mt-2">Puedes encontrarlo en tus pedidos pendientes y retomarlo cuando quieras.</p>
+                    <Button className="mt-6 w-full h-12 font-bold" onClick={handleCloseSaved}>Ver mis pedidos guardados</Button>
                 </div>
             </Modal>
         </div>

@@ -43,7 +43,7 @@ export async function createTicket(data: {
 
         // Send email notification
         try {
-            await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tickets/notify`, {
+            await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/tickets/notify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -150,7 +150,7 @@ export async function resolveTicketAdvanced(ticketId: string, resolution: string
 
         // Send resolution email
         try {
-            await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tickets/notify`, {
+            await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/tickets/notify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

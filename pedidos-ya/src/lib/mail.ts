@@ -98,3 +98,56 @@ export async function sendStatusEmail(application: any) {
         console.error('[EMAIL STATUS ERROR]', err)
     }
 }
+
+export async function sendAbandonedCartEmail(order: any) {
+    const { customer, id, total } = order
+    const firstName = customer.name.split(' ')[0]
+    const email = customer.email
+
+    const subject = '¿Olvidaste algo delicioso? 🛒 - PideloYA'
+    const title = `¡Hola ${firstName}, tu carrito te extraña!`
+    const color = '#EF4444' // Primary red
+    
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const restoreUrl = `${baseUrl}/cart/restore/${id}`
+    const ordersUrl = `${baseUrl}/orders`
+
+    const content = `
+        <p>Notamos que dejaste algunos productos en tu carrito hace un momento. ¡No dejes que se enfríen!</p>
+        <p>Tu pedido por un total de <strong>$${total.toLocaleString('es-CL')}</strong> sigue esperando por ti.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${restoreUrl}" style="background: #EF4444; color: white; padding: 15px 35px; text-decoration: none; font-weight: bold; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);">Retomar mi Pedido 🚀</a>
+        </div>
+
+        <p style="font-size: 13px; color: #666; text-align: center; margin-top: 30px;">
+            Si ya no deseas estos productos, puedes <a href="${ordersUrl}" style="color: #666; text-decoration: underline;">eliminar esta orden guardada</a> desde tu panel de "Mis Pedidos".
+        </p>
+    `
+
+    try {
+        await transporter.sendMail({
+            from: `"PideloYA" <${smtpConfig.auth.user}>`,
+            to: email,
+            subject: subject,
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #eee; border-radius: 12px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h1 style="color: ${color}; margin: 0;">PideloYA</h1>
+                    </div>
+                    <h2 style="color: #333; text-align: center;">${title}</h2>
+                    <div style="line-height: 1.6; font-size: 15px; color: #444;">
+                        ${content}
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                    <p style="font-size: 13px; color: #999; text-align: center;">
+                        Este es un correo automático de recordatorio para tu cuenta en PideloYA Chile.
+                    </p>
+                </div>
+            `
+        })
+        console.log(`[ABANDONED CART EMAIL] Enviado a ${email} para orden ${id}`)
+    } catch (err) {
+        console.error('[ABANDONED CART EMAIL ERROR]', err)
+    }
+}

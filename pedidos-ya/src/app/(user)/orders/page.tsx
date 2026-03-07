@@ -35,8 +35,9 @@ export default async function CustomerOrdersPage() {
         }
     }
 
-    const activeOrders = orders.filter(o => o.status !== 'DELIVERED')
+    const activeOrders = orders.filter(o => o.status !== 'DELIVERED' && o.status !== 'DRAFT')
     const pastOrders = orders.filter(o => o.status === 'DELIVERED')
+    const draftOrders = orders.filter(o => o.status === 'DRAFT')
 
     return (
         <div className="container py-8 max-w-4xl mx-auto min-h-screen">
@@ -54,6 +55,62 @@ export default async function CustomerOrdersPage() {
                 </div>
             ) : (
                 <>
+                    {/* Draft Orders */}
+                    {draftOrders.length > 0 && (
+                        <div className="mb-10">
+                            <h2 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                                Carritos Guardados ({draftOrders.length})
+                            </h2>
+                            <div className="space-y-4">
+                                {draftOrders.map((order) => (
+                                    <Card key={order.id} className="overflow-hidden border border-blue-100 shadow-sm hover:shadow-md transition-all">
+                                        <CardHeader className="bg-blue-50/50 pb-4 border-b border-blue-50">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-white shadow-sm border border-gray-200">
+                                                        <img src={order.restaurant.image || "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&q=80"} alt={order.restaurant.name} className="h-full w-full object-cover" />
+                                                    </div>
+                                                    <div>
+                                                        <CardTitle className="text-lg font-bold">{order.restaurant.name}</CardTitle>
+                                                        <CardDescription>Borrador #{order.id.slice(0, 8)} • {new Date(order.createdAt).toLocaleDateString()}</CardDescription>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <Badge className="bg-blue-100 text-blue-700 font-bold text-sm px-3 py-1 flex items-center gap-2" variant="outline">
+                                                        <Clock className="h-4 w-4" /> Pendiente
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="p-4 flex flex-col md:flex-row justify-between gap-6">
+                                            <div className="flex-1 space-y-2">
+                                                <h4 className="text-xs uppercase font-bold text-gray-500 tracking-wider">Detalle del carrito</h4>
+                                                {order.items.map((item: any) => (
+                                                    <div key={item.id} className="flex justify-between items-center text-sm font-medium text-gray-700">
+                                                        <span><span className="text-[var(--primary)] font-black mr-2">{item.quantity}x</span> {item.product.name}</span>
+                                                        <span className="text-gray-500">${(item.price * item.quantity).toFixed(2)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="w-full md:w-56 bg-white flex flex-col justify-center gap-2">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="font-bold text-gray-600 text-sm">Total</span>
+                                                    <span className="text-xl font-black text-gray-900">${order.total.toFixed(2)}</span>
+                                                </div>
+                                                <Link href={`/cart/restore/${order.id}`} className="w-full inline-flex justify-center items-center h-10 rounded-lg bg-[var(--primary)] text-white font-bold text-sm hover:bg-red-700 transition-colors shadow-sm">
+                                                    Retomar Carrito
+                                                </Link>
+                                                <DeleteDraftForm orderId={order.id} />
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Active Orders */}
                     {activeOrders.length > 0 && (
                         <div className="mb-10">
@@ -160,5 +217,19 @@ export default async function CustomerOrdersPage() {
                 </>
             )}
         </div>
+    )
+}
+
+function DeleteDraftForm({ orderId }: { orderId: string }) {
+    return (
+        <form action={async () => {
+            "use server"
+            const { deleteDraftOrder } = await import('@/app/actions/orders')
+            await deleteDraftOrder(orderId)
+        }}>
+            <button className="w-full inline-flex justify-center items-center h-10 rounded-lg text-red-600 font-bold text-sm hover:bg-red-50 hover:text-red-700 transition-colors">
+                Eliminar Borrador
+            </button>
+        </form>
     )
 }

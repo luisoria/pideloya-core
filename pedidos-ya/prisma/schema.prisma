@@ -164,6 +164,8 @@ model Product {
   description  String
   price        Float
   image        String?
+  available    Boolean    @default(true)
+  stock        Int?       // Null means infinite stock
   restaurantId String
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
   
@@ -172,9 +174,10 @@ model Product {
 
 model Order {
   id           String   @id @default(uuid())
-  status       String   @default("PENDING") // PENDING, CONFIRMED, READY, PICKED_UP, DELIVERED
+  status       String   @default("PENDING") // PENDING, CONFIRMED, READY, PICKED_UP, DELIVERED, DRAFT
   total        Float
   paymentMethod String  @default("CASH") // CASH, CARD
+  reminderLevel Int     @default(0)      // Count abandoned cart reminders (0,1,2,3,4)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   

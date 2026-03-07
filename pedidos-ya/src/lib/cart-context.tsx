@@ -14,6 +14,7 @@ export interface CartItem {
 interface CartContextType {
     items: CartItem[]
     addToCart: (item: Omit<CartItem, "quantity" | "notes">) => void
+    addManyToCart: (items: CartItem[]) => void
     removeFromCart: (itemId: string) => void
     updateQuantity: (itemId: string, quantity: number) => void
     updateNotes: (itemId: string, notes: string) => void
@@ -90,12 +91,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setDiscountAmount(0)
     }
 
+    const addManyToCart = (newItems: CartItem[]) => {
+        setItems(newItems)
+    }
+
     const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0)
     const itemCount = items.reduce((acc, item) => acc + item.quantity, 0)
 
     return (
         <CartContext.Provider value={{
-            items, addToCart, removeFromCart, updateQuantity, updateNotes, clearCart,
+            items, addToCart, addManyToCart, removeFromCart, updateQuantity, updateNotes, clearCart,
             total, itemCount, couponCode, discountAmount, setCouponData
         }}>
             {children}

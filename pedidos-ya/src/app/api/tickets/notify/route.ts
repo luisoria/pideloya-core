@@ -33,7 +33,7 @@ Tu reclamo ha sido registrado exitosamente.
 ⏱️ Tiempo de respuesta estimado: 48 horas
 
 Puedes dar seguimiento a tu ticket en:
-${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/support
+${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/support
 
 Equipo de Soporte PídeloYA
 ═══════════════════════════════════════════════════
