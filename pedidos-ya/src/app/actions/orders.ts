@@ -154,7 +154,10 @@ export async function deliverOrder(orderId: string) {
 
     await prisma.order.update({
         where: { id: orderId },
-        data: { status: "DELIVERED" }
+        data: { 
+            status: "DELIVERED",
+            deliveredAt: new Date()
+        }
     })
     revalidatePath("/driver")
 }

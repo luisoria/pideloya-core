@@ -4,9 +4,10 @@ import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect, notFound } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/Card"
+import Link from "next/link"
 import { Badge } from "@/components/ui/Badge"
 import { MapPin, Package, Clock, Utensils, CheckCircle, Phone, MessageCircle, ArrowLeft, Bike } from "lucide-react"
-import Link from "next/link"
+import { ReviewForm } from "../ReviewForm"
 
 export default async function OrderTrackingPage({ params }: { params: { id: string } }) {
     const session = await getSession()
@@ -19,11 +20,21 @@ export default async function OrderTrackingPage({ params }: { params: { id: stri
         include: {
             restaurant: true,
             driver: true,
-            items: { include: { product: true } }
+            items: { include: { product: true } },
+            productReviews: true
         }
     })
 
+    // Also check for restaurant review
+    const restaurantReview = await prisma.review.findUnique({
+        where: { orderId: id }
+    })
+
     if (!order || order.customerId !== session.id) notFound()
+
+    const isDelivered = order.status === 'DELIVERED'
+    const deliveredTime = new Date(order.deliveredAt || order.updatedAt).getTime()
+    const hoursSinceDelivery = (new Date().getTime() - deliveredTime) / 3600000
 
     const steps = [
         { key: "PENDING", label: "Pedido Recibido", icon: Package, description: "Tu pedido fue recibido por el restaurante" },
@@ -148,6 +159,47 @@ export default async function OrderTrackingPage({ params }: { params: { id: stri
                                         <MessageCircle className="h-5 w-5" />
                                     </button>
                                 </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+                {/* Review Section */}
+                {isDelivered && !restaurantReview && (
+                    hoursSinceDelivery >= 1 ? (
+                        <ReviewForm 
+                            orderId={order.id}
+                            restaurantName={order.restaurant.name}
+                            items={order.items.map(item => ({
+                                productId: item.productId,
+                                name: item.product.name,
+                                image: item.product.image || undefined
+                            }))}
+                        />
+                    ) : (
+                        <Card className="rounded-2xl border-amber-100 bg-amber-50/50 overflow-hidden mb-6">
+                            <CardContent className="p-6 flex items-center gap-4">
+                                <div className="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <Clock className="h-6 w-6 text-amber-600" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight">¡Pedido Entregado!</h4>
+                                    <p className="text-xs text-gray-600">Podrás dejar tu reseña en {Math.ceil(60 - (hoursSinceDelivery * 60))} minutos. Queremos que pruebes todo primero.</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                )}
+
+                {/* Show existing review indicator if already reviewed */}
+                {restaurantReview && (
+                    <Card className="rounded-2xl border-gray-100 bg-gray-50 overflow-hidden mb-6">
+                        <CardContent className="p-6 flex items-center gap-4">
+                            <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <CheckCircle className="h-6 w-6 text-green-600" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight">Calificación Enviada</h4>
+                                <p className="text-xs text-gray-600">Ya calificaste este pedido con {restaurantReview.rating} estrellas.</p>
                             </div>
                         </CardContent>
                     </Card>

@@ -25,6 +25,7 @@ model User {
   driverOrders  Order[]     @relation("DriverOrders")
   tickets       Ticket[]    @relation("UserTickets")
   reviews       Review[]    @relation("CustomerReviews")
+  productReviews ProductReview[] @relation("CustomerProductReviews")
   favorites     Favorite[]  @relation("UserFavorites")
   couponUsages  CouponUsage[] @relation("UserCoupons")
 }
@@ -170,6 +171,7 @@ model Product {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
   
   orderItems   OrderItem[]
+  reviews      ProductReview[] @relation("ProductReviews")
 }
 
 model Order {
@@ -181,6 +183,7 @@ model Order {
   reminderLevel Int     @default(0)      // Count abandoned cart reminders (0,1,2,3,4)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  deliveredAt  DateTime? // To enable reviews 1h after delivery
   
   customerId   String
   customer     User     @relation("CustomerOrders", fields: [customerId], references: [id])
@@ -193,6 +196,7 @@ model Order {
   
   items        OrderItem[]
   couponUsage  CouponUsage?
+  productReviews ProductReview[] @relation("OrderProductReviews")
 }
 
 model OrderItem {
@@ -220,6 +224,24 @@ model Review {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
   
   orderId      String?    @unique // Optional link to specific order
+}
+
+model ProductReview {
+  id           String   @id @default(uuid())
+  rating       Int      // 1-5
+  comment      String?
+  createdAt    DateTime @default(now())
+  
+  customerId   String
+  customer     User     @relation("CustomerProductReviews", fields: [customerId], references: [id])
+  
+  productId    String
+  product      Product  @relation("ProductReviews", fields: [productId], references: [id])
+  
+  orderId      String
+  order        Order    @relation("OrderProductReviews", fields: [orderId], references: [id])
+
+  @@unique([orderId, productId])
 }
 
 model Favorite {
