@@ -22,6 +22,7 @@ interface CartContextType {
     updateQuantity: (itemId: string, quantity: number) => void
     updateNotes: (itemId: string, notes: string) => void
     clearCart: () => void
+    clearAndAdd: (item: Omit<CartItem, "quantity" | "notes">) => void
     total: number
     itemCount: number
     couponCode: string | null
@@ -51,6 +52,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const addToCart = (newItem: Omit<CartItem, "quantity" | "notes">) => {
         resetCouponIfInvalid()
+        
+        // CHECK: If cart has items from another restaurant, we don't allow adding mixed items
+        const currentRestaurantId = items.length > 0 ? items[0].restaurantId : null
+        if (currentRestaurantId && currentRestaurantId !== newItem.restaurantId) {
+            // We return early and don't add. The UI should handle the notification/modal.
+            return false
+        }
+
         setItems((prev) => {
             const existing = prev.find((item) => item.id === newItem.id)
             if (existing) {
@@ -62,6 +71,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             }
             return [...prev, { ...newItem, quantity: 1, notes: "" }]
         })
+        return true
+    }
+
+    const clearAndAdd = (newItem: Omit<CartItem, "quantity" | "notes">) => {
+        clearCart()
+        setItems([{ ...newItem, quantity: 1, notes: "" }])
     }
 
     const removeFromCart = (itemId: string) => {
@@ -111,7 +126,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return (
         <CartContext.Provider value={{
             items, addToCart, addManyToCart, removeFromCart, removeFromRestaurant, updateQuantity, updateNotes, clearCart,
-            total, itemCount, couponCode, discountAmount, setCouponData
+            total, itemCount, couponCode, discountAmount, setCouponData, clearAndAdd
         }}>
             {children}
         </CartContext.Provider>

@@ -133,7 +133,7 @@ export default async function CustomerOrdersPage() {
                                                             </div>
                                                             <div>
                                                                 <CardTitle className="text-lg font-bold">{order.restaurant.name}</CardTitle>
-                                                                <CardDescription>Pedido #{order.id.slice(0, 8)} • {new Date(order.createdAt).toLocaleDateString()}</CardDescription>
+                                                                <CardDescription>Pedido #{String(order.orderNumber).padStart(6, '0')} • {new Date(order.createdAt).toLocaleDateString()}</CardDescription>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-3">
@@ -197,9 +197,12 @@ export default async function CustomerOrdersPage() {
                                                     <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-100 shadow-sm">
                                                         <img src={order.restaurant.image || "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&q=80"} alt="" className="h-full w-full object-cover" />
                                                     </div>
-                                                    <div>
+                                                    <div className="flex flex-col">
                                                         <p className="font-bold text-gray-900 text-sm">{order.restaurant.name}</p>
-                                                        <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })} • {order.items.length} item{order.items.length !== 1 ? 's' : ''}</p>
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">#{String(order.orderNumber).padStart(6, '0')}</p>
+                                                    </div>
+                                                    <div className="text-xs text-gray-400">
+                                                        {new Date(order.createdAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })} • {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">

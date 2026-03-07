@@ -24,19 +24,13 @@ export default function CartPage() {
     const [checkoutStep, setCheckoutStep] = useState<'cart' | 'payment'>('cart')
     const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null)
 
-    // Group items by restaurant
-    const groupedCarts = items.reduce((acc, item) => {
-        const rid = item.restaurantId;
-        if (!acc[rid]) {
-            acc[rid] = {
-                id: rid,
-                name: item.restaurantName || "Restaurante",
-                items: []
-            };
+    useEffect(() => {
+        if (items.length > 0) {
+            setSelectedRestaurantId(items[0].restaurantId)
         }
-        acc[rid].items.push(item);
-        return acc;
-    }, {} as Record<string, { id: string, name: string, items: any[] }>);
+    }, [items])
+
+    const restaurantName = items.length > 0 ? items[0].restaurantName || "Restaurante" : ""
 
     const cartList = Object.values(groupedCarts);
 
@@ -131,6 +125,8 @@ export default function CartPage() {
         setCouponData(null, 0)
     }
 
+    const [orderNum, setOrderNum] = useState<string>('')
+
     const handleCheckout = async () => {
         if (validItems.length === 0 || !isRestaurantOpen || !selectedRestaurantId) return
         setIsLoading(true)
@@ -141,8 +137,14 @@ export default function CartPage() {
                 quantity: item.quantity,
                 price: item.price
             }))
-            await createOrder(selectedRestaurantId, grandTotal, orderItems, paymentForm.paymentMethod === 'card' ? 'CARD' : 'CASH', couponCode || undefined)
-            setSuccessOpen(true)
+            const res: any = await createOrder(selectedRestaurantId, grandTotal, orderItems, paymentForm.paymentMethod === 'card' ? 'CARD' : 'CASH', couponCode || undefined)
+            
+            if (res.error) {
+                alert(res.error)
+            } else {
+                setOrderNum(String(res.orderNumber).padStart(6, '0'))
+                setSuccessOpen(true)
+            }
         } catch (error) {
             console.error(error)
             alert("Error al procesar el pedido. (Asegúrate de estar logueado como cliente)")
@@ -152,17 +154,13 @@ export default function CartPage() {
     }
 
     const handleCloseSuccess = () => {
-        const currentCartsCount = cartList.length;
         setSuccessOpen(false)
         if (selectedRestaurantId) {
             removeFromRestaurant(selectedRestaurantId)
         }
         setCheckoutStep('cart')
         setSelectedRestaurantId(null)
-        // If it was the last restaurant, go to orders, else stay in cart for others
-        if (currentCartsCount <= 1) {
-            window.location.href = "/orders"
-        }
+        window.location.href = "/orders"
     }
 
     const handleSaveDraft = async () => {
@@ -201,10 +199,10 @@ export default function CartPage() {
         return (
             <div className="container py-20 flex flex-col items-center justify-center gap-6 text-center min-h-[60vh]">
                 <div className="h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center text-5xl">🛒</div>
-                <h1 className="text-2xl font-black text-gray-900 uppercase">Tu carrito está vacío</h1>
+                <h1 className="text-2xl font-black text-gray-900 uppercase">¿Hambre? Tu cesta está vacía</h1>
                 <p className="text-gray-500 max-w-sm">Agrega productos deliciosos desde nuestros restaurantes aliados para comenzar tu pedido.</p>
                 <Link href="/" className="inline-flex h-12 px-8 items-center justify-center rounded-xl text-sm font-bold bg-[var(--primary)] text-white hover:bg-red-700 transition-all shadow-lg shadow-red-200">
-                    Explorar Restaurantes
+                    Volver a intentar
                 </Link>
             </div>
         )
@@ -447,131 +445,135 @@ export default function CartPage() {
                 </div>
             </div>
 
+            <div className="mb-6 bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-center gap-3">
+                <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-lg shadow-sm">🏪</div>
+                <div>
+                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest leading-none mb-1">Paso 1 de 2</p>
+                    <p className="text-sm font-bold text-gray-900">Confirma los productos del local seleccionado</p>
+                </div>
+            </div>
+
             <div className="space-y-12">
-                {cartList.map((cart) => {
-                    const cartTotal = cart.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-                    const cartItemCount = cart.items.reduce((acc, i) => acc + i.quantity, 0);
-                    
-                    return (
-                        <div key={cart.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
-                            <div className="bg-gray-900 px-6 py-4 flex items-center justify-between text-white">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 bg-[var(--primary)] rounded-lg flex items-center justify-center text-lg shadow-inner">🍔</div>
-                                    <h2 className="text-lg font-black uppercase tracking-tight">{cart.name}</h2>
-                                </div>
-                                <span className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full uppercase tracking-widest">{cartItemCount} items</span>
-                            </div>
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                    <div className="bg-gray-900 px-6 py-4 flex items-center justify-between text-white">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 bg-[var(--primary)] rounded-lg flex items-center justify-center text-lg shadow-inner">🍔</div>
+                            <h2 className="text-lg font-black uppercase tracking-tight">{restaurantName}</h2>
+                        </div>
+                        <span className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full uppercase tracking-widest">{itemCount} items</span>
+                    </div>
 
-                            <div className="p-6 space-y-4">
-                                {cart.items.map((item) => {
-                                    return (
-                                        <div key={item.id} className="flex gap-4 p-4 rounded-2xl border border-gray-50 hover:border-gray-100 transition-all hover:shadow-sm">
-                                            <div className="h-20 w-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100 shadow-sm">
-                                                {isImageUrl(item.image) ? (
-                                                    <ClientImage 
-                                                        src={item.image} 
-                                                        alt={item.name} 
-                                                        className="h-full w-full object-cover" 
-                                                        fallbackSrc="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80"
-                                                    />
-                                                ) : (
-                                                    <div className="h-full w-full flex items-center justify-center text-3xl bg-gray-100">
-                                                        {item.image && item.image.length < 5 ? item.image : "🍕"}
-                                                    </div>
-                                                )}
+                    <div className="p-6 space-y-4">
+                        {items.map((item) => {
+                            return (
+                                <div key={item.id} className="flex gap-4 p-4 rounded-2xl border border-gray-50 hover:border-gray-100 transition-all hover:shadow-sm">
+                                    <div className="h-20 w-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100 shadow-sm">
+                                        {isImageUrl(item.image) ? (
+                                            <ClientImage 
+                                                src={item.image} 
+                                                alt={item.name} 
+                                                className="h-full w-full object-cover" 
+                                                fallbackSrc="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80"
+                                            />
+                                        ) : (
+                                            <div className="h-full w-full flex items-center justify-center text-3xl bg-gray-100">
+                                                {item.image && item.image.length < 5 ? item.image : "🍕"}
                                             </div>
-                                            
+                                        )}
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between gap-4">
-                                                    <div className="flex-1 min-w-0">
-                                                        <h3 className="font-bold text-gray-900 truncate">{item.name}</h3>
-                                                        <p className="text-sm text-gray-500 mt-0.5">${item.price.toLocaleString()} c/u</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="font-black text-lg text-gray-900">
-                                                            ${(item.price * item.quantity).toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-4 flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                                                        <button 
-                                                            className="h-8 w-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all"
-                                                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                        >
-                                                            <Minus className="h-3 w-3" />
-                                                        </button>
-                                                        <span className="w-8 text-center font-black text-gray-900 text-sm">{item.quantity}</span>
-                                                        <button 
-                                                            className="h-8 w-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-gray-600 hover:bg-green-50 hover:text-green-600 transition-all"
-                                                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                        >
-                                                            <Plus className="h-3 w-3" />
-                                                        </button>
-                                                    </div>
-                                                    <button 
-                                                        className="text-gray-300 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
-                                                        onClick={() => removeFromCart(item.id)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
+                                                <h3 className="font-bold text-gray-900 truncate">{item.name}</h3>
+                                                <p className="text-sm text-gray-500 mt-0.5">${item.price.toLocaleString()} c/u</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-black text-lg text-gray-900">
+                                                    ${(item.price * item.quantity).toLocaleString()}
                                                 </div>
                                             </div>
                                         </div>
-                                    )
-                                })}
-                            </div>
 
-                            <div className="bg-gray-50 px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-gray-100">
-                                <div className="flex items-center gap-6">
-                                    <div>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Subtotal de la orden</p>
-                                        <p className="text-2xl font-black text-gray-900">${cartTotal.toLocaleString()}</p>
-                                    </div>
-                                    <div className="h-10 w-px bg-gray-200 hidden md:block" />
-                                    <div className="hidden sm:flex -space-x-2">
-                                        {cart.items.slice(0, 3).map((it, idx) => (
-                                            <div key={idx} className="h-8 w-8 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center text-xs overflow-hidden">
-                                                {isImageUrl(it.image) ? <img src={it.image} className="w-full h-full object-cover" /> : "🍔"}
+                                        <div className="mt-4 flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                                                <button 
+                                                    className="h-8 w-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all"
+                                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                >
+                                                    <Minus className="h-3 w-3" />
+                                                </button>
+                                                <span className="w-8 text-center font-black text-gray-900 text-sm">{item.quantity}</span>
+                                                <button 
+                                                    className="h-8 w-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-gray-600 hover:bg-green-50 hover:text-green-600 transition-all"
+                                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                >
+                                                    <Plus className="h-3 w-3" />
+                                                </button>
                                             </div>
-                                        ))}
+                                            <button 
+                                                className="text-gray-300 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
+                                                onClick={() => removeFromCart(item.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <Button 
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        setSelectedRestaurantId(cart.id);
-                                        setCheckoutStep('payment');
-                                    }}
-                                    className="w-full md:w-auto px-10 h-14 bg-[var(--primary)] hover:bg-red-700 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-red-100 transition-all active:scale-95 flex items-center gap-2"
-                                >
-                                    Pagar {cart.name} <ChevronRight className="h-5 w-5" />
-                                </Button>
+                            )
+                        })}
+                    </div>
+
+                    <div className="bg-gray-50 px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-gray-100">
+                        <div className="flex items-center gap-6">
+                            <div>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Subtotal de la orden</p>
+                                <p className="text-2xl font-black text-gray-900">${total.toLocaleString()}</p>
                             </div>
                         </div>
-                    );
-                })}
-            </div>
-
-            {cartList.length > 1 && (
-                <div className="mt-12 bg-blue-50 rounded-3xl p-8 border border-blue-100 flex flex-col md:flex-row items-center gap-6">
-                    <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-3xl shadow-sm shrink-0 font-bold">🛒</div>
-                    <div>
-                        <h3 className="text-lg font-black text-blue-900 mb-1 uppercase tracking-tight">Varios restaurantes en tu carrito</h3>
-                        <p className="text-blue-700 text-sm leading-relaxed font-medium">
-                            Debes completar el pago de cada restaurante por separado para que cada uno reciba su pedido correctamente.
-                        </p>
+                        <Button 
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setCheckoutStep('payment');
+                            }}
+                            className="w-full md:w-auto px-10 h-14 bg-[var(--primary)] hover:bg-red-700 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-red-100 transition-all active:scale-95 flex items-center gap-2"
+                        >
+                            Ir a Pagar <ChevronRight className="h-5 w-5" />
+                        </Button>
                     </div>
                 </div>
-            )}
+            </div>
 
-            <Modal isOpen={isSuccessOpen} onClose={handleCloseSuccess} title="¡Pedido Confirmado!">
-                <div className="text-center py-6">
-                    <div className="text-6xl mb-4">🎉</div>
-                    <p className="text-lg font-bold text-gray-900">¡Tu pedido ha sido confirmado!</p>
-                    <p className="text-gray-500 text-sm mt-2">Puedes seguir el estado desde &quot;Mis Pedidos&quot;.</p>
-                    <Button className="mt-6 w-full h-12 font-bold" onClick={handleCloseSuccess}>Ver mi pedido</Button>
+            <Modal isOpen={isSuccessOpen} onClose={handleCloseSuccess} title="¡Pedido Exitoso!">
+                <div className="flex flex-col items-center text-center py-6">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                        <ShieldCheck className="h-10 w-10 text-green-600" />
+                    </div>
+                    
+                    <h4 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tight">¡Pedido Confirmado!</h4>
+                    <div className="bg-gray-900 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-4">
+                        N° #{orderNum}
+                    </div>
+                    
+                    <p className="text-gray-500 text-sm mb-6 max-w-xs leading-relaxed">
+                        ¡Gracias por tu compra! Tu pedido ya está en camino a <span className="font-bold text-gray-900">{restaurantName}</span>.
+                    </p>
+
+                    <div className="w-full bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4 mb-8">
+                        <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm">🛵</div>
+                        <div className="text-left">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Estado actual</p>
+                            <p className="text-sm font-bold text-gray-900">Preparando tu pedido...</p>
+                        </div>
+                    </div>
+
+                    <Button 
+                        size="lg"
+                        className="w-full h-14 bg-[var(--primary)] hover:bg-red-700 text-white font-black uppercase tracking-widest shadow-xl shadow-red-100 rounded-xl" 
+                        onClick={handleCloseSuccess}
+                    >
+                        Ver mis pedidos
+                    </Button>
                 </div>
             </Modal>
         </div>

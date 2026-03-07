@@ -22,15 +22,17 @@ export function MenuClient({ products, restaurantId, restaurantName, isOpen, ope
     openTime: string,
     closeTime: string
 }) {
-    const { addToCart, items, updateQuantity, removeFromCart } = useCart()
+    const { addToCart, items, updateQuantity, removeFromCart, clearAndAdd } = useCart()
     const [showClosedModal, setShowClosedModal] = React.useState(false)
+    const [showConflictModal, setShowConflictModal] = React.useState(false)
+    const [pendingProduct, setPendingProduct] = React.useState<any>(null)
 
     const handleAddToCart = (product: any) => {
         if (!isOpen) {
             setShowClosedModal(true)
             return
         }
-        addToCart({
+        const success = addToCart({
             id: product.id,
             name: product.name,
             price: product.price,
@@ -38,6 +40,26 @@ export function MenuClient({ products, restaurantId, restaurantName, isOpen, ope
             restaurantName: restaurantName,
             image: product.image
         })
+
+        if (!success) {
+            setPendingProduct(product)
+            setShowConflictModal(true)
+        }
+    }
+
+    const confirmClearAndAdd = () => {
+        if (pendingProduct) {
+            clearAndAdd({
+                id: pendingProduct.id,
+                name: pendingProduct.name,
+                price: pendingProduct.price,
+                restaurantId: restaurantId,
+                restaurantName: restaurantName,
+                image: pendingProduct.image
+            })
+            setShowConflictModal(false)
+            setPendingProduct(null)
+        }
     }
 
     return (
@@ -200,6 +222,40 @@ export function MenuClient({ products, restaurantId, restaurantName, isOpen, ope
                             </div>
                             <span className="text-sm font-black text-[var(--primary)]">{openTime} - {closeTime}</span>
                         </div>
+                    </div>
+                </Modal>
+
+                {/* Conflict Modal */}
+                <Modal
+                    isOpen={showConflictModal}
+                    onClose={() => setShowConflictModal(false)}
+                    title="Empezar nuevo carrito"
+                    footer={
+                        <div className="flex gap-3 w-full">
+                            <Button 
+                                variant="ghost"
+                                className="flex-1 font-bold text-gray-500" 
+                                onClick={() => setShowConflictModal(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button 
+                                className="flex-1 bg-[var(--primary)] text-white font-bold" 
+                                onClick={confirmClearAndAdd}
+                            >
+                                Empezar de nuevo
+                            </Button>
+                        </div>
+                    }
+                >
+                    <div className="flex flex-col items-center text-center py-4">
+                        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                            <AlertCircle className="h-8 w-8 text-amber-600" />
+                        </div>
+                        <h4 className="text-lg font-black text-gray-900 mb-2">¿Quieres cambiar de local?</h4>
+                        <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                            Ya tienes productos de <span className="font-bold text-gray-900">{items[0]?.restaurantName || 'otro restaurante'}</span> en tu carrito. Si continúas, se borrarán los productos anteriores para agregar este de <span className="font-bold text-[var(--primary)]">{restaurantName}</span>.
+                        </p>
                     </div>
                 </Modal>
 

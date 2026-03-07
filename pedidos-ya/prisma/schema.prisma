@@ -174,6 +174,7 @@ model Product {
 
 model Order {
   id           String   @id @default(uuid())
+  orderNumber  Int      @unique @default(autoincrement())
   status       String   @default("PENDING") // PENDING, CONFIRMED, READY, PICKED_UP, DELIVERED, DRAFT
   total        Float
   paymentMethod String  @default("CASH") // CASH, CARD

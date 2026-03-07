@@ -50,7 +50,7 @@ export default async function OrderTrackingPage({ params }: { params: { id: stri
                     </Link>
                     <div className="flex-1">
                         <h1 className="text-sm font-black text-gray-900 uppercase tracking-tight">Seguimiento del Pedido</h1>
-                        <p className="text-xs text-gray-400 font-mono">#{order.id.slice(0, 8)}</p>
+                        <p className="text-xs text-gray-400 font-mono">#{String(order.orderNumber).padStart(6, '0')}</p>
                     </div>
                     <Badge className={`font-bold text-xs px-3 py-1 ${order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 animate-pulse'}`}>
                         {order.status === 'DELIVERED' ? 'Entregado' : 'En Curso'}
