@@ -10,8 +10,8 @@ const smtpConfig = {
     port: Number(process.env.SMTP_PORT) || 465,
     secure: Number(process.env.SMTP_PORT) === 465,
     auth: {
-        user: process.env.SMTP_USER || 'info@enigmasecurity.cl',
-        pass: process.env.SMTP_PASS || '',
+        user: process.env.SMTP_USER || 'reclutamiento@enigmasecurity.cl',
+        pass: process.env.SMTP_PASS || '#F5gLJ0pWC[c32',
     },
 }
 
