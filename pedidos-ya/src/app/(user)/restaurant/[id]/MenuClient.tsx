@@ -7,6 +7,12 @@ import { Plus, Minus, Trash2, Clock, ShoppingBag, AlertCircle } from "lucide-rea
 import { useCart } from "@/lib/cart-context"
 import Link from "next/link"
 import { Modal } from "@/components/ui/Modal"
+import { ClientImage } from "@/components/ui/ClientImage"
+
+const isImageUrl = (url: string | null | undefined) => {
+    if (!url) return false
+    return url.startsWith("http") || url.startsWith("/") || url.startsWith("data:image") || /\.(jpeg|jpg|gif|png|webp|svg)/i.test(url)
+}
 
 export function MenuClient({ products, restaurantId, isOpen, openTime, closeTime }: { 
     products: any[], 
@@ -60,10 +66,17 @@ export function MenuClient({ products, restaurantId, isOpen, openTime, closeTime
                                 return (
                                     <div key={item.id} className="flex gap-4 relative group items-center">
                                         <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden shrink-0 shadow-sm">
-                                            {product?.image ? (
-                                                <img src={product.image} alt={item.name} className="w-full h-full object-cover" />
+                                            {isImageUrl(product?.image) ? (
+                                                <ClientImage 
+                                                    src={product.image} 
+                                                    alt={item.name} 
+                                                    className="w-full h-full object-cover" 
+                                                    fallbackSrc="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80"
+                                                />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-2xl">🍔</div>
+                                                <div className="w-full h-full flex items-center justify-center text-2xl bg-gray-100">
+                                                    {product?.image && product.image.length < 5 ? product.image : "🍔"}
+                                                </div>
                                             )}
                                         </div>
                                         <div className="flex-1 flex flex-col justify-center">
@@ -121,15 +134,18 @@ export function MenuClient({ products, restaurantId, isOpen, openTime, closeTime
                             {!isOpen && (
                                 <div className="absolute inset-0 bg-white/40 backdrop-grayscale-[0.5] z-10 pointer-events-none" />
                             )}
-                            <div className="w-24 h-24 bg-gray-100 flex items-center justify-center text-4xl shrink-0 overflow-hidden">
-                                {product.image ? (
-                                    <img
+                            <div className="w-24 h-24 bg-gray-100 flex items-center justify-center text-4xl shrink-0 overflow-hidden bg-gray-100">
+                                {isImageUrl(product.image) ? (
+                                    <ClientImage
                                         src={product.image}
                                         alt={product.name}
                                         className="h-full w-full object-cover"
+                                        fallbackSrc="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80"
                                     />
                                 ) : (
-                                    <span>🍔</span>
+                                    <div className="w-full h-full flex items-center justify-center text-3xl select-none">
+                                        {product.image && product.image.length < 5 ? product.image : "🍔"}
+                                    </div>
                                 )}
                             </div>
                             <div className="flex-1 flex flex-col justify-between p-0">

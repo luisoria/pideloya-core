@@ -8,6 +8,12 @@ import { Trash2, ArrowLeft, Plus, Minus, CreditCard, MapPin, Clock, ShieldCheck,
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { Modal } from "@/components/ui/Modal"
+import { ClientImage } from "@/components/ui/ClientImage"
+
+const isImageUrl = (url: string | null | undefined) => {
+    if (!url) return false
+    return url.startsWith("http") || url.startsWith("/") || url.startsWith("data:image") || /\.(jpeg|jpg|gif|png|webp|svg)/i.test(url)
+}
 
 export default function CartPage() {
     const { items, removeFromCart, updateQuantity, updateNotes, clearCart, total, itemCount, couponCode, discountAmount, setCouponData } = useCart()
@@ -378,10 +384,17 @@ export default function CartPage() {
                         <CardContent className="p-5">
                             <div className="flex gap-4">
                                 <div className="h-20 w-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100 shadow-sm">
-                                    {item.image ? (
-                                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                                    {isImageUrl(item.image) ? (
+                                        <ClientImage 
+                                            src={item.image} 
+                                            alt={item.name} 
+                                            className="h-full w-full object-cover" 
+                                            fallbackSrc="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80"
+                                        />
                                     ) : (
-                                        <div className="h-full w-full flex items-center justify-center text-3xl">🍔</div>
+                                        <div className="h-full w-full flex items-center justify-center text-3xl bg-gray-100">
+                                            {item.image && item.image.length < 5 ? item.image : "🍕"}
+                                        </div>
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
