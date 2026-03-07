@@ -143,7 +143,7 @@ export function MenuClient({ products, restaurantId, restaurantName, isOpen, ope
                                     ${items.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString("es-CL")}
                                 </span>
                             </div>
-                            <Link href="/cart" className="w-full flex items-center justify-center py-3.5 bg-[var(--primary)] text-white font-bold rounded-xl hover:bg-[var(--primary)]/90 transition-all shadow-lg shadow-[var(--primary)]/20 hover:shadow-[var(--primary)]/40 hover:-translate-y-0.5 active:translate-y-0">
+                            <Link href="/cart" className="w-full flex items-center justify-center py-3.5 bg-[var(--primary)] !text-white font-bold rounded-xl hover:bg-[var(--primary)]/90 transition-all shadow-lg shadow-[var(--primary)]/20 hover:shadow-[var(--primary)]/40 hover:-translate-y-0.5 active:translate-y-0">
                                 Ir a pagar pedido
                             </Link>
                         </div>
@@ -273,7 +273,7 @@ export function MenuClient({ products, restaurantId, restaurantName, isOpen, ope
                 {/* Floating Cart Button for Mobile (hidden on desktop where sidebar is visible) */}
                 {items.length > 0 && (
                     <div className="fixed bottom-6 left-0 right-0 p-4 flex justify-center z-50 lg:hidden">
-                        <Link href="/cart" className="inline-flex h-12 items-center justify-center text-sm font-black bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90 transition-all shadow-[0_10px_30px_rgba(204,0,0,0.3)] hover:scale-105 active:scale-95 rounded-full px-10 animate-in slide-in-from-bottom-5 gap-3">
+                        <Link href="/cart" className="inline-flex h-12 items-center justify-center text-sm font-black bg-[var(--primary)] !text-white hover:bg-[var(--primary)]/90 transition-all shadow-[0_10px_30px_rgba(204,0,0,0.3)] hover:scale-105 active:scale-95 rounded-full px-10 animate-in slide-in-from-bottom-5 gap-3">
                             <ShoppingBag className="h-5 w-5 bg-white text-[var(--primary)] rounded-full p-1" />
                             Ver Mi Pedido ({items.length}) - ${items.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString("es-CL")}
                         </Link>
