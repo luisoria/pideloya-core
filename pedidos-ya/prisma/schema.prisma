@@ -28,6 +28,22 @@ model User {
   productReviews ProductReview[] @relation("CustomerProductReviews")
   favorites     Favorite[]  @relation("UserFavorites")
   couponUsages  CouponUsage[] @relation("UserCoupons")
+  addresses     CustomerAddress[] @relation("UserAddresses")
+}
+
+model CustomerAddress {
+  id          String   @id @default(uuid())
+  alias       String   // e.g., "Casa", "Oficina"
+  comuna      String
+  street      String
+  number      String
+  apartment   String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation("UserAddresses", fields: [userId], references: [id])
 }
 
 model Ticket {

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { User, Mail, Phone, Star, Heart, Package, ShoppingBag, Calendar, MapPin, ChevronRight, Clock, Award } from "lucide-react"
 import Link from "next/link"
+import { AddressManager } from "./AddressManager"
 
 export default async function ProfilePage() {
     const session = await getSession()
@@ -101,6 +102,11 @@ export default async function ProfilePage() {
                 <StatCard icon={<Package className="h-5 w-5 text-green-500" />} value={deliveredOrders} label="Entregados" />
                 <StatCard icon={<Star className="h-5 w-5 text-yellow-500" />} value={reviewCount} label="Reseñas" />
                 <StatCard icon={<Heart className="h-5 w-5 text-pink-500" />} value={user.favorites.length} label="Favoritos" />
+            </div>
+
+            {/* Address Management Section */}
+            <div className="mb-8">
+                <AddressManager />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

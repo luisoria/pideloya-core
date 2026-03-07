@@ -48,8 +48,25 @@ export async function login(formData: FormData) {
         // If no passwordHash, allow login (legacy / demo users)
     }
 
+    // Fetch default address to inject into session
+    const defaultAddress = await prisma.customerAddress.findFirst({
+        where: { userId: user.id, isDefault: true }
+    })
+
+    const sessionData = {
+        ...user,
+        activeAddress: defaultAddress ? {
+            id: defaultAddress.id,
+            comuna: defaultAddress.comuna,
+            street: defaultAddress.street,
+            number: defaultAddress.number,
+            apartment: defaultAddress.apartment,
+            alias: defaultAddress.alias
+        } : null
+    }
+
     const cookieStore = await cookies()
-    cookieStore.set("auth_session", JSON.stringify(user), {
+    cookieStore.set("auth_session", JSON.stringify(sessionData), {
         httpOnly: true,
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
