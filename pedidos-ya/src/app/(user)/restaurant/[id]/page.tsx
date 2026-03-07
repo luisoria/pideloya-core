@@ -15,7 +15,7 @@ export default async function RestaurantPage({ params }: { params: { id: string 
         include: {
             products: {
                 include: {
-                    productReviews: {
+                    reviews: {
                         include: { customer: true },
                         orderBy: { createdAt: "desc" }
                     }

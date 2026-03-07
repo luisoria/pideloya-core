@@ -180,13 +180,13 @@ export function MenuClient({ products, restaurantId, restaurantName, isOpen, ope
                                 <CardContent className="p-3 pt-2 flex items-center justify-between shrink-0">
                                     <div className="flex flex-col gap-1">
                                         <span className="font-bold text-red-600">${product.price.toLocaleString("es-CL")}</span>
-                                        {product.productReviews && product.productReviews.length > 0 && (
+                                        {product.reviews && product.reviews.length > 0 && (
                                             <div className="flex items-center gap-1">
                                                 <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                                                 <span className="text-[10px] font-black text-amber-600">
-                                                    {(product.productReviews.reduce((s: number, r: any) => s + r.rating, 0) / product.productReviews.length).toFixed(1)}
+                                                    {(product.reviews.reduce((s: number, r: any) => s + r.rating, 0) / product.reviews.length).toFixed(1)}
                                                 </span>
-                                                <span className="text-[10px] text-gray-400">({product.productReviews.length})</span>
+                                                <span className="text-[10px] text-gray-400">({product.reviews.length})</span>
                                             </div>
                                         )}
                                     </div>
