@@ -376,23 +376,32 @@ export default function CartPage() {
                     return (
                     <Card key={item.id} className={`rounded-2xl border-gray-200 overflow-hidden transition-all ${isUnavailable ? 'opacity-60 bg-gray-50 grayscale' : 'hover:shadow-md'}`}>
                         <CardContent className="p-5">
-                            <div className="flex items-start justify-between gap-4">
+                            <div className="flex gap-4">
+                                <div className="h-20 w-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100 shadow-sm">
+                                    {item.image ? (
+                                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center text-3xl">🍔</div>
+                                    )}
+                                </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-gray-900 truncate">
-                                        {item.name} 
-                                        {isUnavailable && <span className="text-red-600 font-bold text-xs uppercase ml-2 px-2 py-0.5 bg-red-100 rounded">Sin Stock</span>}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 mt-0.5">${item.price.toLocaleString()} c/u</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className={`font-black text-lg ${isUnavailable ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                                        ${(item.price * item.quantity).toLocaleString()}
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-bold text-gray-900 truncate">
+                                                {item.name}
+                                                {isUnavailable && <span className="text-red-600 font-bold text-xs uppercase ml-2 px-2 py-0.5 bg-red-100 rounded">Sin Stock</span>}
+                                            </h3>
+                                            <p className="text-sm text-gray-500 mt-0.5">${item.price.toLocaleString()} c/u</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className={`font-black text-lg ${isUnavailable ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                                                ${(item.price * item.quantity).toLocaleString()}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* Quantity Controls + Notes */}
-                            <div className="mt-4 flex items-center justify-between gap-3">
+                                    {/* Quantity Controls + Notes */}
+                                    <div className="mt-4 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
                                     <button
                                         aria-label="Disminuir cantidad"
@@ -433,6 +442,8 @@ export default function CartPage() {
                                     onChange={e => updateNotes(item.id, e.target.value)}
                                     disabled={isUnavailable}
                                 />
+                            </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

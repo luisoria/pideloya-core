@@ -27,7 +27,8 @@ export function MenuClient({ products, restaurantId, isOpen, openTime, closeTime
             id: product.id,
             name: product.name,
             price: product.price,
-            restaurantId: restaurantId
+            restaurantId: restaurantId,
+            image: product.image
         })
     }
 

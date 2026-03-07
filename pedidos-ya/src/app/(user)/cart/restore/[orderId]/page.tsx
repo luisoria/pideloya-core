@@ -30,7 +30,8 @@ export default function RestoreCartPage({ params }: { params: { orderId: string 
                         name: i.product.name,
                         price: i.price,
                         quantity: i.quantity,
-                        restaurantId: draft.order.restaurantId
+                        restaurantId: draft.order.restaurantId,
+                        image: i.product.image
                     }))
                     
                     addManyToCart(itemsToRestore)
