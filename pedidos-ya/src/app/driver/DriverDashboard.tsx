@@ -261,8 +261,8 @@ export function DriverDashboard({
                                             </div>
                                             <div className="flex-1">
                                                 <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Entregar a</p>
-                                                <p className="font-bold text-gray-900 mt-1">{currentOrder.customer.name}</p>
-                                                <p className="text-sm text-gray-500">Dirección del cliente</p>
+                                                <p className="font-bold text-gray-900 mt-1">{currentOrder.customer?.name || "Cliente Desconocido"}</p>
+                                                <p className="text-sm text-gray-500">Tel: {currentOrder.customer?.phone || "N/A"}</p>
                                             </div>
                                         </div>
 
@@ -307,14 +307,14 @@ export function DriverDashboard({
                                 <QAChatModal 
                                     isOpen={isChatOpen} 
                                     onClose={() => setIsChatOpen(false)} 
-                                    orderId={currentOrder.id}
-                                    customerName={currentOrder.customer.name}
+                                    orderId={currentOrder?.id || ""}
+                                    customerName={currentOrder?.customer?.name || "Cliente"}
                                 />
                                 
                                 <QAIncidentModal 
                                     isOpen={isIncidentOpen}
                                     onClose={() => setIsIncidentOpen(false)}
-                                    orderId={currentOrder.id}
+                                    orderId={currentOrder?.id || ""}
                                     onSuccess={() => {
                                         setActiveTab('orders')
                                         router.refresh()
@@ -438,7 +438,7 @@ export function DriverDashboard({
                                                     <CheckCircle className="h-5 w-5 text-green-600" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-gray-900 text-sm">{order.restaurant.name}</p>
+                                                    <p className="font-bold text-gray-900 text-sm">{order.restaurant?.name || "Local Desconocido"}</p>
                                                     <div className="flex items-center gap-2 text-xs text-gray-400">
                                                         <Calendar className="h-3 w-3" />
                                                         {new Date(order.updatedAt).toLocaleDateString('es-CL', {

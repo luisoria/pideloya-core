@@ -105,6 +105,7 @@ export default async function DriverPage() {
             </AppShell>
         )
     } catch (e: any) {
+        if (e.digest?.includes("NEXT_REDIRECT") || e.message?.includes("NEXT_REDIRECT")) throw e
         console.error("Critical DriverPage Error:", e)
         return (
             <div className="p-8 text-center">
