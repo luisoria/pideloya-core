@@ -1,9 +1,9 @@
 "use server"
 
-import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { verifyPassword } from "@/lib/password"
+import bcrypt from "bcryptjs"
+import { createSession, deleteSession } from "@/lib/auth"
 
 export async function login(formData: FormData) {
     const email = (formData.get("email") as string)?.trim().toLowerCase()
@@ -29,7 +29,7 @@ export async function login(formData: FormData) {
                 data: {
                     email,
                     name: email.split('@')[0],
-                    role,
+                    role: role as any,
                 }
             })
         } else {
@@ -38,12 +38,10 @@ export async function login(formData: FormData) {
     } else {
         // User exists — verify password if they have one set
         if (user.passwordHash && password) {
-            if (!verifyPassword(password, user.passwordHash)) {
+            const isValid = await bcrypt.compare(password, user.passwordHash)
+            if (!isValid) {
                 throw new Error("Contraseña incorrecta")
             }
-        } else if (user.passwordHash && !password) {
-            // Account has password but none provided (quick-login dev button) — allow for dev users
-            // In production this should be blocked
         }
         // If no passwordHash, allow login (legacy / demo users)
     }
@@ -54,7 +52,10 @@ export async function login(formData: FormData) {
     })
 
     const sessionData = {
-        ...user,
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
         activeAddress: defaultAddress ? {
             id: defaultAddress.id,
             comuna: defaultAddress.comuna,
@@ -65,27 +66,28 @@ export async function login(formData: FormData) {
         } : null
     }
 
-    const cookieStore = await cookies()
-    cookieStore.set("auth_session", JSON.stringify(sessionData), {
-        httpOnly: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-    })
+    await createSession(sessionData)
 
+    let targetPath = "/"
     switch (user.role) {
         case "RESTAURANT":
-            redirect("/partner")
+            targetPath = "/partner"
+            break
         case "DRIVER":
-            redirect("/driver")
+            targetPath = "/driver"
+            break
         case "ADMIN":
-            redirect("/backoffice")
+            targetPath = "/backoffice"
+            break
         default:
-            redirect("/")
+            targetPath = "/"
+            break
     }
+    
+    redirect(targetPath)
 }
 
 export async function logout() {
-    const cookieStore = await cookies()
-    cookieStore.delete("auth_session")
+    await deleteSession()
     redirect("/")
 }

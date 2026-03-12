@@ -1,14 +1,13 @@
-import { createHash } from "crypto"
+import bcrypt from "bcryptjs"
 
 /**
- * Hash a password using SHA-256 with a salt.
- * For demo/development — in production use bcrypt or Argon2.
+ * Hash a password using bcrypt.
+ * Standard for production security.
  */
-export function hashPassword(password: string): string {
-    const salt = "pideloya_salt_2026"
-    return createHash("sha256").update(password + salt).digest("hex")
+export async function hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, 10)
 }
 
-export function verifyPassword(password: string, hash: string): boolean {
-    return hashPassword(password) === hash
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(password, hash)
 }

@@ -1,9 +1,9 @@
 "use server"
 
-import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { hashPassword, verifyPassword } from "@/lib/password"
+import bcrypt from "bcryptjs"
+import { createSession } from "@/lib/auth"
 
 export async function register(formData: FormData) {
     const name = (formData.get("name") as string)?.trim()
@@ -30,7 +30,7 @@ export async function register(formData: FormData) {
         throw new Error("Ya existe una cuenta con ese email")
     }
 
-    const pwHash = hashPassword(password)
+    const pwHash = await bcrypt.hash(password, 10)
 
     const user = await prisma.user.create({
         data: {
@@ -43,12 +43,12 @@ export async function register(formData: FormData) {
         }
     })
 
-    // Auto-login after registration
-    const cookieStore = await cookies()
-    cookieStore.set("auth_session", JSON.stringify(user), {
-        httpOnly: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
+    // Auto-login after registration using signed session
+    await createSession({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
     })
 
     redirect("/")

@@ -18,6 +18,8 @@ export default function LoginPage() {
             const fd = new FormData(e.currentTarget)
             await login(fd)
         } catch (err: any) {
+            // Next.js redirect() throws an error that should not be caught as a UI error
+            if (err.message === "NEXT_REDIRECT") return;
             setError(err.message || "Error al iniciar sesión")
             setLoading(false)
         }
@@ -31,6 +33,8 @@ export default function LoginPage() {
             fd.set("email", email)
             await login(fd)
         } catch (err: any) {
+            // Next.js redirect() throws an error that should not be caught as a UI error
+            if (err.message === "NEXT_REDIRECT") return;
             setError(err.message || "Error")
             setLoading(false)
         }

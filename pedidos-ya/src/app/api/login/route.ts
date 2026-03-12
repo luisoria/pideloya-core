@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
+import { createSession } from '@/lib/auth'
+
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:3000'
 
 const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
@@ -15,31 +19,41 @@ export async function POST(request: Request) {
     try {
         const { email, password } = await request.json()
         
-        // Búsqueda simple por email ya que el schema no tiene password
         const user = await prisma.user.findUnique({
             where: { email }
         })
 
         if (!user) {
-            return NextResponse.json({ error: "Usuario no encontrado" }, { status: 401, headers: corsHeaders })
+            return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401, headers: corsHeaders })
         }
 
-        // Si es luisoria, permitir cualquier cosa o validar lo que el usuario mandó en el primer mensaje
-        // "login luisoria password: qUyNZJe/qzSj4?L"
-        if (email === 'luisoria' || email === 'luis@test.com' || user.email === email) {
-            return NextResponse.json({ 
-                success: true, 
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                    role: user.role
-                }
-            }, { headers: corsHeaders })
+        // Si el usuario tiene passwordHash, validamos con bcrypt. 
+        // Si no tiene (legacy/demo), permitimos login directo para no bloquear el ambiente local.
+        if (user.passwordHash) {
+            const isValid = await bcrypt.compare(password, user.passwordHash)
+            if (!isValid) {
+                return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401, headers: corsHeaders })
+            }
+        } else {
+            console.warn(`[SECURITY] Login Without Password for user: ${email}. Add a password hash in the DB.`)
         }
 
-        return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401, headers: corsHeaders })
+        const sessionData = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role
+        }
+
+        await createSession(sessionData)
+
+        return NextResponse.json({ 
+            success: true, 
+            user: sessionData
+        }, { headers: corsHeaders })
+
     } catch (error) {
+        console.error("[LOGIN_ERROR]", error)
         return NextResponse.json({ error: "Error en el servidor" }, { status: 500, headers: corsHeaders })
     }
 }

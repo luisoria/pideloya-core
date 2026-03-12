@@ -19,6 +19,8 @@ export default function RegisterPage() {
             const fd = new FormData(e.currentTarget)
             await register(fd)
         } catch (err: any) {
+            // Next.js redirect() throws an error that should not be caught as a UI error
+            if (err.message === "NEXT_REDIRECT") return;
             setError(err.message || "Error al registrarse")
             setLoading(false)
         }

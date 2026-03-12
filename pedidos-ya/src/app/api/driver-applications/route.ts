@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { sendStatusEmail } from '@/lib/mail'
 import crypto from 'crypto'
-
-const prisma = new PrismaClient()
+import bcrypt from 'bcryptjs'
 
 // POST — Crear o actualizar solicitud (vía Formulario Driver)
 export async function POST(req: Request) {
@@ -13,9 +12,6 @@ export async function POST(req: Request) {
             step, 
             applicationId, 
             password, 
-            passwordConfirm,
-            contractSigned,
-            contractVerifyCode,
             contractFullname,
             ...data 
         } = body
@@ -26,7 +22,7 @@ export async function POST(req: Request) {
 
         // Mapear password a passwordHash para el schema si viene en el body
         if (password) {
-            data.passwordHash = password;
+            data.passwordHash = await bcrypt.hash(password, 10);
         }
 
         // ── ACTUALIZAR SOLICITUD EXISTENTE ──
@@ -63,9 +59,9 @@ export async function POST(req: Request) {
                 }
 
                 return NextResponse.json(updated)
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('[API UPDATE ERROR]', err)
-                if (err.code === 'P2025') {
+                if (err instanceof Error && (err as any).code === 'P2025') {
                     return NextResponse.json({ error: 'La sesión ha expirado o la solicitud no existe.' }, { status: 404 })
                 }
                 return NextResponse.json({ error: 'Error al actualizar el progreso' }, { status: 500 })
@@ -116,11 +112,11 @@ export async function POST(req: Request) {
         })
 
         return NextResponse.json(application, { status: 201 })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[driver-applications POST ERROR]', error)
         return NextResponse.json({
             error: 'Error interno del servidor',
-            details: error.message
+            details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 })
     }
 }
