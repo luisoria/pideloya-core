@@ -28,10 +28,9 @@ export default async function RestaurantPage({ params }: { params: { id: string 
         }
     })
 
-    // Fetch coupons via raw query to bypass Prisma client sync issues for now
     let activeCoupons: any[] = []
     try {
-        activeCoupons = await prisma.$queryRaw`SELECT * FROM "Coupon" WHERE status = 'ACTIVE' AND "restaurantId" = ${id}`
+        activeCoupons = await prisma.coupon.findMany({ where: { status: 'ACTIVE', restaurantId: id } })
     } catch (e) {
         console.warn("Could not fetch coupons:", e)
     }

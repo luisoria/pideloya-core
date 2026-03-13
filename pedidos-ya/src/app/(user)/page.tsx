@@ -50,10 +50,9 @@ export default async function HomePage({ searchParams }: PageProps) {
         : []
     const favIds = new Set(userFavorites.map(f => f.restaurantId))
 
-    // Fetch coupons via raw query to bypass Prisma client sync issues for now
     let activeCoupons: any[] = []
     try {
-        activeCoupons = await prisma.$queryRaw`SELECT * FROM "Coupon" WHERE status = 'ACTIVE'`
+        activeCoupons = await prisma.coupon.findMany({ where: { status: 'ACTIVE' } })
     } catch (e) {
         console.warn("Could not fetch coupons:", e)
     }
@@ -64,10 +63,16 @@ export default async function HomePage({ searchParams }: PageProps) {
             ? r.reviews.reduce((sum: any, rev: any) => sum + rev.rating, 0) / r.reviews.length
             : null
 
-        const rCoupons = activeCoupons.filter(c => c.restaurantId === r.id || c.restaurantId === null)
+        const rCoupons = activeCoupons
+            .filter(c => c.restaurantId === r.id || c.restaurantId === null)
+            .map(c => ({ description: c.description }))
+
         const isOpen = isRestaurantOpen({ openTime: r.openTime, closeTime: r.closeTime, acceptingOrders: r.acceptingOrders })
 
-        return { ...r, avgRating, reviewCount: r.reviews.length, isFavorite: favIds.has(r.id), coupons: rCoupons, isOpen }
+        // Omit non-serializable or unnecessary relational data containing Dates before passing to Client Component
+        const { reviews: _reviews, favorites: _favorites, ...safeRestaurant } = r
+
+        return { ...safeRestaurant, avgRating, reviewCount: r.reviews.length, isFavorite: favIds.has(r.id), coupons: rCoupons, isOpen }
     })
 
     // Promos mock data 
