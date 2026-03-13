@@ -100,6 +100,16 @@ export default function LoginPage() {
                             </button>
                         </div>
 
+                        <div className="flex justify-end -mt-3">
+                            <Link 
+                                href="/login/recovery" 
+                                className="text-sm font-semibold hover:opacity-80 transition-all opacity-100"
+                                style={{ color: "#ffffff", textDecoration: "none" }}
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        </div>
+
                         <button
                             type="submit"
                             disabled={loading}

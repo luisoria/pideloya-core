@@ -94,16 +94,16 @@ export function DriverDashboard({
                     {/* Quick Stats */}
                     <div className="grid grid-cols-3 gap-4 mt-6">
                         <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-                            <p className="text-2xl font-black text-green-400">${earnings.today.earnings.toLocaleString()}</p>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Hoy</p>
+                            <p className="text-3xl font-black text-green-400">${earnings.today.earnings.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Hoy</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-                            <p className="text-2xl font-black text-blue-400">${earnings.week.earnings.toLocaleString()}</p>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Esta Semana</p>
+                            <p className="text-3xl font-black text-blue-400">${earnings.week.earnings.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Esta Semana</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-                            <p className="text-2xl font-black text-yellow-400">{earnings.allTime.deliveries}</p>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Viajes Totales</p>
+                            <p className="text-3xl font-black text-yellow-400">{earnings.allTime.deliveries}</p>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Viajes Totales</p>
                         </div>
                     </div>
                 </div>
@@ -120,16 +120,16 @@ export function DriverDashboard({
                     ]).map(tab => (
                         <button
                             key={tab.key}
-                            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === tab.key
+                            className={`flex-1 py-3 rounded-lg text-sm font-black transition-all flex items-center justify-center gap-1.5 ${activeTab === tab.key
                                     ? 'bg-[var(--primary)] text-white shadow-sm'
                                     : 'text-gray-500 hover:bg-gray-50'
                                 }`}
                             onClick={() => setActiveTab(tab.key)}
                         >
-                            <tab.icon className="h-3.5 w-3.5" />
+                            <tab.icon className="h-4 w-4" />
                             {tab.label}
                             {tab.count !== undefined && tab.count > 0 && (
-                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-white/20' : 'bg-red-100 text-red-600'
+                                <span className={`text-[11px] font-black px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-white/20' : 'bg-red-100 text-red-600'
                                     }`}>{tab.count}</span>
                             )}
                         </button>
@@ -141,7 +141,7 @@ export function DriverDashboard({
                 {/* ═══ TAB: AVAILABLE ORDERS ═══ */}
                 {activeTab === 'orders' && (
                     <div>
-                        <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">
+                        <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">
                             {availableOrders.length} Pedido{availableOrders.length !== 1 ? 's' : ''} Disponible{availableOrders.length !== 1 ? 's' : ''}
                         </h2>
                         {availableOrders.length === 0 ? (
@@ -418,7 +418,7 @@ export function DriverDashboard({
                 {/* ═══ TAB: TRIP HISTORY ═══ */}
                 {activeTab === 'history' && (
                     <div>
-                        <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">
+                        <h2 className="text-sm font-black text-green-600 bg-gray-100 py-3 rounded-xl uppercase tracking-widest mb-6 text-center shadow-sm border border-gray-200">
                             {completedOrders.length} Viaje{completedOrders.length !== 1 ? 's' : ''} Completado{completedOrders.length !== 1 ? 's' : ''}
                         </h2>
 
@@ -438,23 +438,23 @@ export function DriverDashboard({
                                                     <CheckCircle className="h-5 w-5 text-green-600" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-gray-900 text-sm">{order.restaurant?.name || "Local Desconocido"}</p>
-                                                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                        <Calendar className="h-3 w-3" />
+                                                    <p className="font-black text-gray-900 text-base">{order.restaurant?.name || "Local Desconocido"}</p>
+                                                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                                                        <Calendar className="h-3.5 w-3.5" />
                                                         {new Date(order.updatedAt).toLocaleDateString('es-CL', {
                                                             day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                                                         })}
                                                     </div>
-                                                    <p className="text-xs text-gray-400 mt-0.5">
+                                                    <p className="text-sm text-gray-400 mt-0.5">
                                                         Para: {order.customer.name} • {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-lg font-black text-green-600">
+                                                <p className="text-xl font-black text-green-600">
                                                     +${Math.round(order.total * commissionRate).toLocaleString()}
                                                 </p>
-                                                <p className="text-[10px] text-gray-400">
+                                                <p className="text-xs text-gray-400">
                                                     Total: ${order.total.toLocaleString()}
                                                 </p>
                                             </div>

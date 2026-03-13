@@ -9,6 +9,8 @@ export async function createOrder(
     restaurantId: string,
     total: number,
     items: { productId: string, quantity: number, price: number }[],
+    deliveryAddress: string,
+    customerPhone: string,
     paymentMethod: string = "CASH",
     couponCode?: string
 ) {
@@ -65,7 +67,7 @@ export async function createOrder(
             // 3. Verificación de Cupón
             if (validCouponId) {
                 // Raw query to check usage within transaction
-                const couponsRaw: any[] = await tx.$queryRaw`
+                const couponsRaw = await tx.$queryRaw<{ totalUsageLimit: number | null, currentUsages: number }[]>`
                     SELECT "totalUsageLimit", "currentUsages" FROM "Coupon" WHERE "id" = ${validCouponId}
                 `
                 const currentCoupon = couponsRaw[0];
@@ -87,6 +89,9 @@ export async function createOrder(
                     restaurantId,
                     total,
                     paymentMethod,
+                    // @ts-expect-error - Field added in migration but prisma client might not be updated
+                    deliveryAddress,
+                    customerPhone,
                     items: {
                         create: items.map(item => ({
                             productId: item.productId,
@@ -110,11 +115,11 @@ export async function createOrder(
 
         revalidatePath("/restaurant")
         revalidatePath("/(user)")
-        revalidatePath("/orders")
         return order
-    } catch (error: any) {
+    } catch (error) {
         console.error("Order creation error:", error)
-        return { error: error.message || "Ocurrió un error al procesar el pedido" }
+        const message = error instanceof Error ? error.message : "Ocurrió un error al procesar el pedido"
+        return { error: message }
     }
 }
 
@@ -201,6 +206,14 @@ export async function saveOrderAsDraft(
                     }
                 }
             })
+            if (validCouponId) {
+                // Link coupon to draft order if valid
+                await tx.$executeRaw`
+                    INSERT INTO "CouponUsage" ("id", "couponId", "userId", "orderId", "discountAmount", "usedAt")
+                    VALUES (${crypto.randomUUID()}, ${validCouponId}, ${session.id}, ${newOrder.id}, ${couponDiscountAmount}, ${new Date().toISOString()})
+                `
+            }
+
             return newOrder
         })
 
@@ -208,9 +221,10 @@ export async function saveOrderAsDraft(
         revalidatePath("/(user)")
         revalidatePath("/orders")
         return { success: true, orderId: order.id }
-    } catch (error: any) {
+    } catch (error) {
         console.error("Cart save error:", error)
-        return { error: error.message || "Ocurrió un error al guardar el carrito" }
+        const message = error instanceof Error ? error.message : "Ocurrió un error al guardar el carrito"
+        return { error: message }
     }
 }
 

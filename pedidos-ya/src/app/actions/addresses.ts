@@ -1,8 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/auth"
-import { cookies } from "next/headers"
+import { getSession, createSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
 export async function getAddresses() {
@@ -138,12 +137,7 @@ async function updateSessionWithAddress(address: any) {
         }
     }
 
-    const cookieStore = await cookies()
-    cookieStore.set("auth_session", JSON.stringify(updatedSession), {
-        httpOnly: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-    })
+    await createSession(updatedSession)
 }
 
 async function clearAddressFromSession() {
@@ -151,11 +145,5 @@ async function clearAddressFromSession() {
     if (!session) return
 
     const { activeAddress, ...rest } = session
-    
-    const cookieStore = await cookies()
-    cookieStore.set("auth_session", JSON.stringify(rest), {
-        httpOnly: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-    })
+    await createSession(rest)
 }

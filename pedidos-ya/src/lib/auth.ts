@@ -10,6 +10,8 @@ export async function getSession() {
 
     try {
         const { payload } = await jwtVerify(sessionCookie, SECRET)
+        // Ensure standard claims exist
+        if (!payload.sub || !payload.sessionId) return null
         return payload as any
     } catch (e) {
         return null
@@ -17,8 +19,12 @@ export async function getSession() {
 }
 
 export async function createSession(data: any) {
-    const session = await new SignJWT(data)
+    const sessionId = crypto.randomUUID()
+    
+    const session = await new SignJWT({ ...data, sessionId })
         .setProtectedHeader({ alg: "HS256" })
+        .setSubject(data.id.toString())
+        .setJti(sessionId)
         .setIssuedAt()
         .setExpirationTime("2h")
         .sign(SECRET)
@@ -27,8 +33,9 @@ export async function createSession(data: any) {
     cookieStore.set("auth_session", session, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict",
         path: "/",
+        maxAge: 7200 // 2 hours in seconds
     })
     return session
 }

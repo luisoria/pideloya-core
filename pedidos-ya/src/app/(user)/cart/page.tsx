@@ -1,14 +1,14 @@
-
 "use client"
 
 import { useCart } from "@/lib/cart-context"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
-import { Trash2, ArrowLeft, Plus, Minus, CreditCard, MapPin, Clock, ShieldCheck, ChevronRight, MessageSquare } from "lucide-react"
+import { Plus, Trash2, MapPin, CreditCard, Clock, ChevronRight, Minus, ArrowLeft, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { Modal } from "@/components/ui/Modal"
 import { ClientImage } from "@/components/ui/ClientImage"
+import { getAddresses } from "@/app/actions/addresses"
 
 const isImageUrl = (url: string | null | undefined) => {
     if (!url) return false
@@ -16,11 +16,9 @@ const isImageUrl = (url: string | null | undefined) => {
 }
 
 export default function CartPage() {
-    const { items, removeFromCart, removeFromRestaurant, updateQuantity, updateNotes, clearCart, total, itemCount, couponCode, discountAmount, setCouponData } = useCart()
+    const { items, removeFromCart, removeFromRestaurant, updateQuantity, total, itemCount, couponCode, discountAmount, setCouponData } = useCart()
     const [isSuccessOpen, setSuccessOpen] = useState(false)
-    const [isSavedOpen, setSavedOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [isSaving, setIsSaving] = useState(false)
     const [checkoutStep, setCheckoutStep] = useState<'cart' | 'payment'>('cart')
     const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null)
 
@@ -46,18 +44,67 @@ export default function CartPage() {
         cvv: '',
         address: '',
         phone: '',
-        paymentMethod: 'card' as 'card' | 'cash'
+        paymentMethod: 'card' as 'card' | 'cash',
+        isManualAddress: false,
+        selectedAddressId: '' as string
     })
+
+    const [savedAddresses, setSavedAddresses] = useState<any[]>([])
 
     // Validation State
     const [isRestaurantOpen, setIsRestaurantOpen] = useState(true)
     const [unavailableItems, setUnavailableItems] = useState<string[]>([])
-    const [isValidating, setIsValidating] = useState(false)
+
+    useEffect(() => {
+        if (checkoutStep === 'payment') {
+            loadAddresses()
+        }
+    }, [checkoutStep])
+
+    const loadAddresses = async () => {
+        try {
+            const data = await getAddresses()
+            setSavedAddresses(data as any[])
+            const defaultAddr = (data as any[]).find((a: any) => a.isDefault) || data[0]
+            if (defaultAddr) {
+                setPaymentForm(prev => ({
+                    ...prev,
+                    selectedAddressId: defaultAddr.id,
+                    address: `${defaultAddr.street} ${defaultAddr.number}${defaultAddr.apartment ? ', ' + defaultAddr.apartment : ''}, ${defaultAddr.comuna}`,
+                    isManualAddress: false
+                }))
+            } else {
+                setPaymentForm(prev => ({ ...prev, isManualAddress: true }))
+            }
+        } catch (error) {
+            console.error("Error loading addresses", error)
+        }
+    }
+
+    const handleAddressChange = (addressId: string) => {
+        if (addressId === 'new') {
+            setPaymentForm(prev => ({
+                ...prev,
+                selectedAddressId: 'new',
+                address: '',
+                isManualAddress: true
+            }))
+        } else {
+            const addr = savedAddresses.find(a => a.id === addressId)
+            if (addr) {
+                setPaymentForm(prev => ({
+                    ...prev,
+                    selectedAddressId: addressId,
+                    address: `${addr.street} ${addr.number}${addr.apartment ? ', ' + addr.apartment : ''}, ${addr.comuna}`,
+                    isManualAddress: false
+                }))
+            }
+        }
+    }
 
     useEffect(() => {
         if (items.length === 0 || !selectedRestaurantId) return
         const validate = async () => {
-            setIsValidating(true)
             try {
                 const { validateCart } = await import('@/app/actions/cart-validation')
                 const restaurantItems = items.filter(i => i.restaurantId === selectedRestaurantId)
@@ -69,8 +116,6 @@ export default function CartPage() {
                 }
             } catch (error) {
                 console.error("Error validando carrito", error)
-            } finally {
-                setIsValidating(false)
             }
         }
         validate()
@@ -84,8 +129,6 @@ export default function CartPage() {
     // Recalculate based on available items only for active order
     const validItems = checkoutItems.filter(i => !unavailableItems.includes(i.id))
     const validTotal = validItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
-    const validItemCount = items.reduce((acc, item) => acc + item.quantity, 0) // Header count stays global
-    
     // Fees for the ACTIVE cart being checked out
     const deliveryFee = validTotal > 0 && validTotal > 15000 ? 0 : 1990
     const serviceFee = Math.round(validTotal * 0.05)
@@ -136,7 +179,15 @@ export default function CartPage() {
                 quantity: item.quantity,
                 price: item.price
             }))
-            const res: any = await createOrder(selectedRestaurantId, grandTotal, orderItems, paymentForm.paymentMethod === 'card' ? 'CARD' : 'CASH', couponCode || undefined)
+            const res: any = await createOrder(
+                selectedRestaurantId, 
+                grandTotal, 
+                orderItems, 
+                paymentForm.address,
+                paymentForm.phone,
+                paymentForm.paymentMethod === 'card' ? 'CARD' : 'CASH', 
+                couponCode || undefined
+            )
             
             if (res.error) {
                 alert(res.error)
@@ -144,8 +195,7 @@ export default function CartPage() {
                 setOrderNum(String(res.orderNumber).padStart(6, '0'))
                 setSuccessOpen(true)
             }
-        } catch (error) {
-            console.error(error)
+        } catch (_error) {
             alert("Error al procesar el pedido. (Asegúrate de estar logueado como cliente)")
         } finally {
             setIsLoading(false)
@@ -162,45 +212,18 @@ export default function CartPage() {
         window.location.href = "/orders"
     }
 
-    const handleSaveDraft = async () => {
-        if (validItems.length === 0) return
-        setIsSaving(true)
-        try {
-            const { saveOrderAsDraft } = await import('@/app/actions/orders')
-            const restaurantId = validItems[0].restaurantId
-            const orderItems = validItems.map(item => ({
-                productId: item.id,
-                quantity: item.quantity,
-                price: item.price
-            }))
-            
-            const res = await saveOrderAsDraft(restaurantId, grandTotal, orderItems, couponCode || undefined)
-            if (res.error) {
-                alert(res.error)
-            } else {
-                setSavedOpen(true)
-            }
-        } catch (error) {
-            console.error(error)
-            alert("Error al guardar el carrito.")
-        } finally {
-            setIsSaving(false)
-        }
-    }
-
-    const handleCloseSaved = () => {
-        setSavedOpen(false)
-        clearCart()
-        window.location.href = "/orders"
-    }
 
     if (items.length === 0 && !isSuccessOpen) {
         return (
             <div className="container py-20 flex flex-col items-center justify-center gap-6 text-center min-h-[60vh]">
                 <div className="h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center text-5xl">🛒</div>
-                <h1 className="text-2xl font-black text-gray-900 uppercase">¿Hambre? Tu cesta está vacía</h1>
+                <h1 className="text-2xl font-black text-gray-900 uppercase">¿Hambre? Tu carrito está vacío</h1>
                 <p className="text-gray-500 max-w-sm">Agrega productos deliciosos desde nuestros restaurantes aliados para comenzar tu pedido.</p>
-                <Link href="/" className="inline-flex h-12 px-8 items-center justify-center rounded-xl text-sm font-bold bg-[var(--primary)] text-white hover:bg-red-700 transition-all shadow-lg shadow-red-200">
+                <Link 
+                    href="/" 
+                    className="inline-flex h-14 items-center justify-center rounded-xl text-base font-black bg-red-600 hover:bg-red-700 transition-all shadow-xl shadow-red-500/20 uppercase tracking-widest"
+                    style={{ color: "#ffffff", minWidth: "400px", textDecoration: "none" }}
+                >
                     Volver a intentar
                 </Link>
             </div>
@@ -212,7 +235,7 @@ export default function CartPage() {
         return (
             <div className="container py-8 max-w-2xl">
                 <div className="flex items-center gap-4 mb-8">
-                    <button aria-label="Volver al carrito" onClick={() => setCheckoutStep('cart')} className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <button aria-label="Volver al carrito" onClick={() => setCheckoutStep('cart')} className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" title="Volver al carrito">
                         <ArrowLeft className="h-5 w-5 text-gray-700" />
                     </button>
                     <div>
@@ -298,22 +321,76 @@ export default function CartPage() {
                 )}
 
                 {/* Delivery Address */}
-                <Card className="mb-6 rounded-2xl border-gray-200 overflow-hidden">
-                    <CardContent className="p-6 space-y-4">
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                <Card className="mb-6 rounded-2xl border-gray-200 overflow-hidden shadow-sm">
+                    <CardContent className="p-6 space-y-5">
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                                 <MapPin className="h-3.5 w-3.5" /> Dirección de entrega
                             </label>
-                            <input
-                                type="text"
-                                placeholder="Av. Apoquindo 4500, Dpto 1201, Las Condes"
-                                className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 font-medium focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100"
-                                value={paymentForm.address}
-                                onChange={e => setPaymentForm({ ...paymentForm, address: e.target.value })}
-                            />
+                            {savedAddresses.length > 0 && (
+                                <button 
+                                    onClick={() => setPaymentForm(prev => ({ ...prev, isManualAddress: !prev.isManualAddress, selectedAddressId: prev.isManualAddress ? (savedAddresses.find(a => a.isDefault)?.id || savedAddresses[0].id) : 'new' }))}
+                                    className="text-[10px] font-black text-[var(--primary)] uppercase tracking-widest hover:underline"
+                                >
+                                    {paymentForm.isManualAddress ? "Usar mis direcciones" : "Nueva dirección temporal"}
+                                </button>
+                            )}
                         </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Teléfono de contacto</label>
+
+                        {!paymentForm.isManualAddress && savedAddresses.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3">
+                                {savedAddresses.map((addr) => (
+                                    <button
+                                        key={addr.id}
+                                        onClick={() => handleAddressChange(addr.id)}
+                                        className={`flex flex-col p-4 rounded-xl border-2 transition-all text-left ${
+                                            paymentForm.selectedAddressId === addr.id 
+                                            ? "border-[var(--primary)] bg-red-50/30" 
+                                            : "border-gray-100 bg-gray-50/50 hover:border-gray-200"
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-sm font-black text-gray-900 uppercase tracking-tight">{addr.alias}</span>
+                                            {addr.isDefault && <span className="text-[9px] font-black bg-gray-900 text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Predeterminada</span>}
+                                        </div>
+                                        <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                                            {addr.street} {addr.number}{addr.apartment ? `, ${addr.apartment}` : ''}
+                                            <br />
+                                            {addr.comuna}
+                                        </p>
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleAddressChange('new')}
+                                    className="flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-all font-bold text-sm"
+                                >
+                                    <Plus className="h-4 w-4" /> Agregar dirección temporal
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                {savedAddresses.length > 0 && (
+                                    <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl flex items-start gap-3 mb-2">
+                                        <div className="text-sm">💡</div>
+                                        <p className="text-[10px] text-amber-800 font-bold uppercase tracking-tight leading-relaxed">
+                                            Esta dirección se usará solo para este pedido (Dirección temporal).
+                                        </p>
+                                    </div>
+                                )}
+                                <input
+                                    type="text"
+                                    placeholder="Av. Apoquindo 4500, Dpto 1201, Las Condes (Dirección Completa)"
+                                    className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 font-medium focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100"
+                                    value={paymentForm.address}
+                                    onChange={e => setPaymentForm({ ...paymentForm, address: e.target.value })}
+                                />
+                            </div>
+                        )}
+
+                        <div className="pt-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5" /> Teléfono de contacto
+                            </label>
                             <input
                                 type="tel"
                                 placeholder="+56 9 1234 5678"
@@ -341,6 +418,7 @@ export default function CartPage() {
                                  <button
                                      onClick={handleRemoveCoupon}
                                      className="h-10 w-10 flex items-center justify-center bg-white text-gray-400 hover:text-red-600 rounded-xl border border-transparent hover:border-red-100 transition-all shadow-sm"
+                                     title="Eliminar cupón"
                                  >
                                      <Trash2 className="h-4 w-4" />
                                  </button>
@@ -499,6 +577,7 @@ export default function CartPage() {
                                                 <button 
                                                     className="h-8 w-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all"
                                                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                    title="Disminuir cantidad"
                                                 >
                                                     <Minus className="h-3 w-3" />
                                                 </button>
@@ -506,6 +585,7 @@ export default function CartPage() {
                                                 <button 
                                                     className="h-8 w-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-gray-600 hover:bg-green-50 hover:text-green-600 transition-all"
                                                     onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                    title="Aumentar cantidad"
                                                 >
                                                     <Plus className="h-3 w-3" />
                                                 </button>
@@ -513,6 +593,7 @@ export default function CartPage() {
                                             <button 
                                                 className="text-gray-300 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
                                                 onClick={() => removeFromCart(item.id)}
+                                                title="Eliminar del carrito"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
