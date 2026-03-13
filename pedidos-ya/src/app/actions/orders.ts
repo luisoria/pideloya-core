@@ -89,7 +89,6 @@ export async function createOrder(
                     restaurantId,
                     total,
                     paymentMethod,
-                    // @ts-expect-error - Field added in migration but prisma client might not be updated
                     deliveryAddress,
                     customerPhone,
                     items: {
