@@ -10,7 +10,7 @@ export async function login(formData: FormData) {
     const password = formData.get("password") as string | null
 
     if (!email) {
-        throw new Error("El email es requerido")
+        return { error: "El email es requerido" }
     }
 
     let user = await prisma.user.findUnique({
@@ -33,14 +33,14 @@ export async function login(formData: FormData) {
                 }
             })
         } else {
-            throw new Error("No existe una cuenta con ese email. ¿Quieres registrarte?")
+            return { error: "No existe una cuenta con ese email. ¿Quieres registrarte?" }
         }
     } else {
         // User exists — verify password if they have one set
         if (user.passwordHash && password) {
             const isValid = await bcrypt.compare(password, user.passwordHash)
             if (!isValid) {
-                throw new Error("Contraseña incorrecta")
+                return { error: "Contraseña incorrecta" }
             }
         }
         // If no passwordHash, allow login (legacy / demo users)

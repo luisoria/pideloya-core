@@ -16,7 +16,12 @@ export default function LoginPage() {
         setLoading(true)
         try {
             const fd = new FormData(e.currentTarget)
-            await login(fd)
+            const res = await login(fd)
+            if (res && res.error) {
+                setError(res.error)
+                setLoading(false)
+                return
+            }
         } catch (err: any) {
             // Next.js redirect() throws an error that should not be caught as a UI error
             if (err.message === "NEXT_REDIRECT") return;
@@ -31,7 +36,12 @@ export default function LoginPage() {
         try {
             const fd = new FormData()
             fd.set("email", email)
-            await login(fd)
+            const res = await login(fd)
+            if (res && res.error) {
+                setError(res.error)
+                setLoading(false)
+                return
+            }
         } catch (err: any) {
             // Next.js redirect() throws an error that should not be caught as a UI error
             if (err.message === "NEXT_REDIRECT") return;
